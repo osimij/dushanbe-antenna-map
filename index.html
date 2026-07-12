@@ -82,6 +82,30 @@
     max-width: 260px; white-space: normal;
   }
 
+  /* the base map + dots render through deck.gl's canvas (z-index 2 in the ctrl layer);
+     lift MapLibre's DOM overlays above it so markers & popups aren't hidden behind the tiles */
+  .maplibregl-marker { z-index: 3; }
+  .maplibregl-popup  { z-index: 6; }
+
+  /* big-antenna (tower) markers — the real hub sites */
+  .hub { position: relative; width: 40px; height: 40px; cursor: pointer; z-index: 5; }
+  .hub .core {
+    position: absolute; inset: 0; border-radius: 50%;
+    background: radial-gradient(circle at 50% 34%, #ff8a63, #e11d48 72%);
+    border: 3px solid #fff; box-shadow: 0 3px 12px rgba(0,0,0,.6);
+    display: flex; align-items: center; justify-content: center; font-size: 19px; z-index: 2;
+  }
+  .hub .ring {
+    position: absolute; inset: 0; border-radius: 50%; border: 3px solid #e11d48;
+    z-index: 1; animation: hubPulse 2.4s ease-out infinite;
+  }
+  .hub .num {
+    position: absolute; top: -6px; right: -6px; z-index: 3; min-width: 18px; height: 18px;
+    padding: 0 4px; border-radius: 999px; background: #0b0f18; color: #fff; border: 2px solid #fff;
+    font: 700 11px/14px -apple-system, BlinkMacSystemFont, sans-serif; text-align: center;
+  }
+  @keyframes hubPulse { 0% { transform: scale(1); opacity: .65; } 70%, 100% { transform: scale(2.1); opacity: 0; } }
+
   #overlay { position: fixed; inset: 0; background: rgba(8,11,18,.92); z-index: 9999; display: none; align-items: center; justify-content: center; padding: 20px; }
   .card { width: 100%; max-width: 460px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 24px; }
   .card h2 { margin: 0 0 6px; font-size: 18px; }
@@ -140,6 +164,7 @@
     <div class="rowflex">
       <label class="tg"><input type="checkbox" id="tgAnt" checked /> Show antennas</label>
       <label class="tg"><input type="checkbox" id="tgMarks" checked /> Mahalla markers</label>
+      <label class="tg"><input type="checkbox" id="tgHubs" checked /> 📡 Big antennas</label>
     </div>
   </div>
 
@@ -175,10 +200,21 @@ const REGISTRY = [{"m": "махаллаи Бинихисорак", "h": "", "c":
 
   const DUSHANBE = { lat: 38.566, lng: 68.760 };
 
+  // ---- the real BIG antennas (tower sites) — exact coords from the Yandex links ----
+  const HUBS = [
+    { lat: 38.583123, lng: 68.732282, label: "" },
+    { lat: 38.580183, lng: 68.729155, label: "" },
+    { lat: 38.561839, lng: 68.754215, label: "" },
+    { lat: 38.562181, lng: 68.755813, label: "" },
+    { lat: 38.513274, lng: 68.701453, label: "" },
+    { lat: 38.633917, lng: 68.769574, label: "Кушониён" },
+  ];
+
   let map, infoWindow, deckOverlay;
-  let showAnt = true, showMarks = true, viewMode = "dots";
+  let showAnt = true, showMarks = true, showHubs = true, viewMode = "dots";
   let antennas = [];      // { position:[lng,lat], ri }  — one per physical antenna (~8278)
   let famMarkers = [];    // native google markers at mahalla centers
+  let hubMarkers = [];    // the big-antenna tower markers
   let activeFam = null;   // isolated family index, or null = all
   let query = "";
 
@@ -298,6 +334,34 @@ const REGISTRY = [{"m": "махаллаи Бинихисорак", "h": "", "c":
     });
   }
 
+  // ---- big-antenna (hub) markers — the real tower sites ----
+  function buildHubMarkers(){
+    hubMarkers.forEach((m) => m.remove()); hubMarkers = [];
+    if (!showHubs || !map) return;
+    HUBS.forEach((hb, i) => {
+      const el = document.createElement("div");
+      el.className = "hub";
+      el.innerHTML = '<div class="ring"></div><div class="core">📡</div><div class="num">' + (i + 1) + "</div>";
+      el.title = "Большая антенна " + (i + 1) + (hb.label ? " — " + hb.label : "");
+      const mk = new maplibregl.Marker({ element: el }).setLngLat([hb.lng, hb.lat]).addTo(map);
+      el.addEventListener("click", (e) => { e.stopPropagation(); hubInfo(i); });
+      hubMarkers.push(mk);
+    });
+  }
+  function hubInfo(i){
+    const hb = HUBS[i];
+    infoWindow.setContent(
+      '<div style="font:14px/1.5 -apple-system,BlinkMacSystemFont,sans-serif;color:#111;max-width:240px">'
+      + '<b style="font-size:15px">📡 Большая антенна ' + (i + 1) + "</b>"
+      + (hb.label ? '<br><span style="color:#333">' + escapeHtml(hb.label) + "</span>" : "")
+      + '<br><span style="color:#555;font-size:12px">' + hb.lat.toFixed(6) + ", " + hb.lng.toFixed(6) + "</span>"
+      + '<br><a href="https://yandex.ru/maps/?pt=' + hb.lng + "," + hb.lat + '&z=17&l=map" target="_blank" rel="noopener" style="color:#c0392b;font-size:12px">Открыть в Яндекс ↗</a>'
+      + "</div>"
+    );
+    infoWindow.setPosition({ lat: hb.lat, lng: hb.lng });
+    infoWindow.open(map);
+  }
+
   // ---- family info + selection ----
   function famInfo(i){
     const f = FAMILIES[i];
@@ -360,6 +424,7 @@ const REGISTRY = [{"m": "махаллаи Бинихисорак", "h": "", "c":
     if (!map) return;
     const b = new maplibregl.LngLatBounds();
     FAMILIES.forEach((f) => b.extend([f.lng, f.lat]));
+    HUBS.forEach((h) => b.extend([h.lng, h.lat]));
     map.fitBounds(b, { padding: 60, maxZoom: 15 });
   }
 
@@ -402,6 +467,7 @@ const REGISTRY = [{"m": "махаллаи Бинихисорак", "h": "", "c":
 
     buildAntennas();
     buildFamMarkers();
+    buildHubMarkers();
     refreshDeck();
     renderList();
     fitAll();
@@ -419,6 +485,7 @@ const REGISTRY = [{"m": "махаллаи Бинихисорак", "h": "", "c":
   $("search").addEventListener("input", (e) => { query = e.target.value; renderList(); });
   $("tgAnt").onchange = (e) => { showAnt = e.target.checked; refreshDeck(); };
   $("tgMarks").onchange = (e) => { showMarks = e.target.checked; buildFamMarkers(); };
+  $("tgHubs").onchange = (e) => { showHubs = e.target.checked; buildHubMarkers(); };
   $("mapStyle").onchange = (e) => {
     baseTiles = TILESETS[e.target.value] || TILESETS.voyager;
     const bg = (e.target.value === "dark" || e.target.value === "satellite") ? "#0b0f18" : "#e9edf0";
