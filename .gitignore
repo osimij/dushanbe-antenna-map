@@ -10,3 +10,4 @@
 # Dependencies / tooling
 node_modules/
 .vercel
+.claude/

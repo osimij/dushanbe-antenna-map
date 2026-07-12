@@ -2,24 +2,47 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Дилшод — Dushanbe Antenna Registry</title>
 <link href="https://unpkg.com/maplibre-gl@^4.7.0/dist/maplibre-gl.css" rel="stylesheet" />
 <style>
   :root {
     --bg: #0f1420; --panel: #171d2b; --panel-2: #1f2637; --line: #2a3346;
     --text: #e7ecf5; --muted: #9aa6bd; --accent: #ff5a3c; --ok: #34d399;
+    --peek: calc(58px + env(safe-area-inset-bottom, 0px));
+    --ease: cubic-bezier(.4, 0, .2, 1);
   }
   * { box-sizing: border-box; }
   html, body { height: 100%; margin: 0; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    color: var(--text); background: var(--bg); display: flex; height: 100vh; overflow: hidden;
+    color: var(--text); background: var(--bg); display: flex; height: 100vh; height: 100dvh;
+    overflow: hidden; overscroll-behavior: none; touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
   }
   #sidebar {
     width: 360px; min-width: 360px; background: var(--panel); border-right: 1px solid var(--line);
     display: flex; flex-direction: column; height: 100%;
+    transition: margin-left .3s var(--ease);
   }
+  body.nav-hidden #sidebar { margin-left: -361px; }
+
+  .sheet-toggle { display: none; }
+  .navbtn {
+    flex: 0 0 auto; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center;
+    background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; color: var(--muted);
+    font-size: 16px; line-height: 1; padding: 0 0 2px; cursor: pointer;
+    transition: color .15s, border-color .15s;
+  }
+  .navbtn:hover { color: var(--text); border-color: var(--accent); }
+  .nav-open {
+    position: fixed; top: 12px; left: 12px; z-index: 150; display: none; align-items: center; gap: 8px;
+    padding: 9px 14px; background: var(--panel); color: var(--text); border: 1px solid var(--line);
+    border-radius: 10px; font-size: 13.5px; font-weight: 600; cursor: pointer;
+    box-shadow: 0 4px 18px rgba(0,0,0,.45); transition: border-color .15s;
+  }
+  body.nav-hidden .nav-open { display: flex; }
+  .nav-open:hover { border-color: var(--accent); }
   .head { padding: 15px 18px 12px; border-bottom: 1px solid var(--line); }
   .head h1 { margin: 0; font-size: 16px; display: flex; align-items: center; gap: 8px; }
   .head .sub { margin-top: 4px; font-size: 12px; color: var(--muted); }
@@ -37,16 +60,26 @@
   .search { position: relative; }
   .search input {
     width: 100%; background: var(--panel-2); border: 1px solid var(--line); color: var(--text);
-    border-radius: 8px; padding: 9px 11px 9px 32px; font-size: 13.5px; outline: none;
+    border-radius: 10px; padding: 9px 11px 9px 32px; font-size: 13.5px; outline: none;
+    transition: border-color .15s, box-shadow .15s;
   }
-  .search input:focus { border-color: var(--accent); }
+  .search input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(255,90,60,.14); }
   .search .ico { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 13px; }
   .rowflex { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-  .tg { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text); cursor: pointer; }
-  .tg input[type=checkbox] { width: 15px; height: 15px; accent-color: var(--accent); cursor: pointer; }
+  .chips { display: flex; gap: 7px; flex-wrap: wrap; }
+  .chip { position: relative; cursor: pointer; }
+  .chip input { position: absolute; opacity: 0; pointer-events: none; }
+  .chip span {
+    display: inline-flex; align-items: center; gap: 5px; padding: 6px 11px; border-radius: 999px;
+    background: var(--panel-2); border: 1px solid var(--line); color: var(--muted);
+    font-size: 12px; font-weight: 500; user-select: none; -webkit-user-select: none;
+    transition: background .18s, border-color .18s, color .18s;
+  }
+  .chip input:checked + span { background: rgba(255,90,60,.13); border-color: rgba(255,90,60,.5); color: var(--text); }
+  .chip:hover span { border-color: var(--accent); }
   .seg { display: flex; align-items: center; gap: 9px; font-size: 12px; color: var(--muted); }
   .seg .opts { display: flex; background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
-  .seg .opts label { padding: 6px 11px; font-size: 12.5px; color: var(--muted); cursor: pointer; }
+  .seg .opts label { padding: 6px 11px; font-size: 12.5px; color: var(--muted); cursor: pointer; transition: background .18s, color .18s; }
   .seg .opts label.on { background: var(--accent); color: #fff; font-weight: 600; }
   .seg .opts input { display: none; }
   .styleSel { background: var(--panel-2); border: 1px solid var(--line); color: var(--text); border-radius: 8px; padding: 6px 8px; font-size: 12.5px; outline: none; cursor: pointer; }
@@ -54,8 +87,18 @@
 
   .list-head { display: flex; align-items: center; padding: 11px 16px 5px; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .6px; }
   .list-head .reset { margin-left: auto; background: none; border: none; color: var(--accent); padding: 2px 6px; font-size: 11px; font-weight: 600; text-transform: none; letter-spacing: 0; cursor: pointer; display: none; }
-  #list { flex: 1; overflow-y: auto; padding: 4px 10px 14px; }
-  .item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; cursor: pointer; border: 1px solid transparent; }
+  #list {
+    flex: 1; min-height: 0; overflow-y: auto; padding: 4px 10px 14px;
+    overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--line) transparent;
+  }
+  #list::-webkit-scrollbar { width: 8px; }
+  #list::-webkit-scrollbar-thumb { background: var(--line); border-radius: 8px; }
+  #list::-webkit-scrollbar-thumb:hover { background: #3a4560; }
+  .item {
+    display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px;
+    cursor: pointer; border: 1px solid transparent;
+    transition: background-color .15s, border-color .15s;
+  }
   .item:hover { background: var(--panel-2); border-color: var(--line); }
   .item.active { background: var(--panel-2); border-color: var(--accent); }
   .dot { flex: 0 0 auto; width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(255,255,255,.35); }
@@ -67,8 +110,13 @@
   .empty { padding: 22px 16px; color: var(--muted); font-size: 13px; text-align: center; line-height: 1.5; }
 
   .foot { border-top: 1px solid var(--line); padding: 10px 16px; display: flex; gap: 8px; }
-  .foot button { flex: 1; background: var(--panel-2); border: 1px solid var(--line); color: var(--text); font-size: 12.5px; font-weight: 500; padding: 8px; border-radius: 8px; cursor: pointer; }
+  .foot button {
+    flex: 1; background: var(--panel-2); border: 1px solid var(--line); color: var(--text);
+    font-size: 12.5px; font-weight: 500; padding: 8px; border-radius: 8px; cursor: pointer;
+    transition: border-color .15s, background .15s;
+  }
   .foot button:hover { border-color: var(--accent); }
+  .foot button:active { background: var(--line); }
   .note { font-size: 11px; color: var(--muted); padding: 0 16px 8px; line-height: 1.5; }
   .note b { color: #f0b34a; }
   .keylink { text-align: center; font-size: 11px; color: var(--muted); padding: 0 16px 10px; cursor: pointer; }
@@ -87,8 +135,39 @@
   .maplibregl-marker { z-index: 3; }
   .maplibregl-popup  { z-index: 6; }
 
-  /* big-antenna (tower) markers — the real hub sites */
-  .hub { position: relative; width: 40px; height: 40px; cursor: pointer; z-index: 5; }
+  /* dark-themed popups + map controls to match the panel */
+  .maplibregl-popup-content {
+    background: var(--panel); color: var(--text); border: 1px solid var(--line);
+    border-radius: 12px; box-shadow: 0 10px 32px rgba(0,0,0,.55); padding: 12px 26px 11px 14px;
+  }
+  .maplibregl-popup-anchor-top .maplibregl-popup-tip,
+  .maplibregl-popup-anchor-top-left .maplibregl-popup-tip,
+  .maplibregl-popup-anchor-top-right .maplibregl-popup-tip { border-bottom-color: var(--panel); }
+  .maplibregl-popup-anchor-bottom .maplibregl-popup-tip,
+  .maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip,
+  .maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip { border-top-color: var(--panel); }
+  .maplibregl-popup-anchor-left .maplibregl-popup-tip { border-right-color: var(--panel); }
+  .maplibregl-popup-anchor-right .maplibregl-popup-tip { border-left-color: var(--panel); }
+  .maplibregl-popup-close-button { color: var(--muted); font-size: 18px; padding: 0 7px; }
+  .maplibregl-popup-close-button:hover { color: var(--text); background: none; }
+  .pop { font: 13.5px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: var(--text); max-width: 240px; }
+  .pop .t { font-size: 14.5px; font-weight: 700; }
+  .pop .red { color: #ff7a5c; font-weight: 700; }
+  .pop .mut { color: var(--muted); }
+  .pop .sm { font-size: 12px; }
+  .pop .apx { color: #f0b34a; font-size: 12px; }
+  .pop a { color: #ff8a63; text-decoration: none; font-size: 12.5px; }
+  .pop a:hover { text-decoration: underline; }
+  .maplibregl-ctrl-group { background: var(--panel); border: 1px solid var(--line); box-shadow: 0 2px 10px rgba(0,0,0,.4); }
+  .maplibregl-ctrl-group button + button { border-top: 1px solid var(--line); }
+  .maplibregl-ctrl button .maplibregl-ctrl-icon { filter: invert(.85); }
+  .maplibregl-ctrl-attrib { background: rgba(15,20,32,.72) !important; color: var(--muted); border-radius: 8px 0 0 0; }
+  .maplibregl-ctrl-attrib a { color: var(--muted); }
+
+  /* big-antenna (tower) markers — the real hub sites.
+     NB: no `position` here — MapLibre's own .maplibregl-marker{position:absolute}
+     must win, otherwise the markers stack in normal flow and drift off their coords */
+  .hub { width: 40px; height: 40px; cursor: pointer; z-index: 5; }
   .hub .core {
     position: absolute; inset: 0; border-radius: 50%;
     background: radial-gradient(circle at 50% 34%, #ff8a63, #e11d48 72%);
@@ -106,29 +185,50 @@
   }
   @keyframes hubPulse { 0% { transform: scale(1); opacity: .65; } 70%, 100% { transform: scale(2.1); opacity: 0; } }
 
-  #overlay { position: fixed; inset: 0; background: rgba(8,11,18,.92); z-index: 9999; display: none; align-items: center; justify-content: center; padding: 20px; }
-  .card { width: 100%; max-width: 460px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 24px; }
-  .card h2 { margin: 0 0 6px; font-size: 18px; }
-  .card p { color: var(--muted); font-size: 13px; line-height: 1.55; margin: 0 0 14px; }
-  .card ol { color: var(--muted); font-size: 12.5px; line-height: 1.6; padding-left: 18px; margin: 0 0 16px; }
-  .card ol a { color: var(--accent); }
-  .card .krow { display: flex; gap: 8px; }
-  .card input { flex: 1; background: var(--panel-2); border: 1px solid var(--line); color: var(--text); border-radius: 8px; padding: 10px 11px; font-size: 14px; outline: none; }
-  .card button { cursor: pointer; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; padding: 10px 14px; background: var(--accent); color: #fff; }
-  .card .msg { color: #ff8b76; font-size: 12.5px; min-height: 16px; margin: 8px 0 0; }
-
+  /* ---------- mobile: map-first, panel becomes a swipeable bottom sheet ---------- */
   @media (max-width: 720px) {
-    body { flex-direction: column; }
-    #sidebar { width: 100%; min-width: 0; height: 50%; }
-    #map { height: 50%; }
+    #sidebar {
+      position: fixed; left: 0; right: 0; bottom: 0; width: 100%; min-width: 0; height: auto;
+      max-height: 76dvh; z-index: 200; margin: 0 !important;
+      border-right: none; border-top: 1px solid var(--line); border-radius: 18px 18px 0 0;
+      box-shadow: 0 -10px 34px rgba(0,0,0,.5);
+      transform: translateY(0); transition: transform .32s var(--ease);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    body.sheet-collapsed #sidebar { transform: translateY(calc(100% - var(--peek))); }
+    .navbtn, .nav-open { display: none !important; }
+
+    .sheet-toggle {
+      display: flex; flex: 0 0 auto; flex-direction: column; align-items: center;
+      gap: 7px; height: 58px; width: 100%; padding: 9px 16px 0;
+      background: none; border: none; color: var(--text); font: inherit; font-size: 13px;
+      cursor: pointer; touch-action: none;
+    }
+    .sheet-toggle .grab { width: 44px; height: 4px; border-radius: 999px; background: #3a4560; }
+    .sheet-toggle .st-row { display: flex; align-items: center; gap: 6px; color: var(--muted); white-space: nowrap; }
+    .sheet-toggle .st-row b { color: var(--text); font-size: 13.5px; }
+    .sheet-toggle .chev { display: inline-block; color: var(--muted); transition: transform .3s var(--ease); }
+    body.sheet-collapsed .sheet-toggle .chev { transform: rotate(180deg); }
+
+    #map { width: 100%; height: 100%; }
+    .head { padding: 2px 16px 10px; }
+    .head h1 { font-size: 15px; }
+    .search input { font-size: 16px; }   /* ≥16px so iOS doesn't zoom the page on focus */
+    .item { padding: 10px; }
+    /* keep attribution & bottom controls visible above the collapsed bar */
+    .maplibregl-ctrl-bottom-right { bottom: var(--peek); }
   }
 </style>
 </head>
 <body>
 
 <aside id="sidebar">
+  <button id="sheetToggle" class="sheet-toggle" aria-expanded="true">
+    <span class="grab"></span>
+    <span class="st-row">📡 <b id="shAnt">—</b> антенн · <b id="shMah">—</b> махалл <span class="chev">▾</span></span>
+  </button>
   <div class="head">
-    <h1>📡 Дилшод · Душанбе <span class="badge" id="badge">—</span></h1>
+    <h1>📡 Дилшод · Душанбе <span class="badge" id="badge">—</span><button id="navCollapse" class="navbtn" title="Скрыть панель">‹</button></h1>
     <div class="sub">Реестр антенн · ЧДММ «Дилшод» · 01.05.24</div>
     <div class="stat">
       <div class="s"><b id="stAnt">0</b><span>антенн</span></div>
@@ -140,49 +240,51 @@
   <div class="controls">
     <div class="search">
       <span class="ico">🔍</span>
-      <input id="search" type="text" placeholder="Search a mahalla…" autocomplete="off" />
+      <input id="search" type="text" placeholder="Поиск махалли…" autocomplete="off" />
     </div>
     <div class="rowflex">
       <div class="seg">
-        <span>View</span>
+        <span>Вид</span>
         <div class="opts" id="viewOpts">
-          <label class="on" data-v="dots"><input type="radio" name="view" value="dots" checked />Dots</label>
-          <label data-v="heatmap"><input type="radio" name="view" value="heatmap" />Heatmap</label>
+          <label class="on" data-v="dots"><input type="radio" name="view" value="dots" checked />Точки</label>
+          <label data-v="heatmap"><input type="radio" name="view" value="heatmap" />Плотность</label>
         </div>
       </div>
       <div class="seg">
-        <span>Map</span>
+        <span>Карта</span>
         <select id="mapStyle" class="styleSel">
           <option value="voyager">Voyager</option>
-          <option value="light">Light</option>
-          <option value="dark">Dark</option>
-          <option value="satellite">Satellite</option>
+          <option value="light">Светлая</option>
+          <option value="dark">Тёмная</option>
+          <option value="satellite">Спутник</option>
           <option value="osm">OSM</option>
         </select>
       </div>
     </div>
-    <div class="rowflex">
-      <label class="tg"><input type="checkbox" id="tgAnt" checked /> Show antennas</label>
-      <label class="tg"><input type="checkbox" id="tgMarks" checked /> Mahalla markers</label>
-      <label class="tg"><input type="checkbox" id="tgHubs" checked /> 📡 Big antennas</label>
+    <div class="chips">
+      <label class="chip"><input type="checkbox" id="tgAnt" checked /><span>Антенны</span></label>
+      <label class="chip"><input type="checkbox" id="tgMarks" checked /><span>Махаллы</span></label>
+      <label class="chip"><input type="checkbox" id="tgHubs" checked /><span>📡 Вышки</span></label>
+      <label class="chip"><input type="checkbox" id="tgRadius" checked /><span>◎ Радиус 9 км</span></label>
     </div>
   </div>
 
   <div class="list-head">
-    Mahallas · by antenna count
-    <button class="reset" id="reset">✕ Show all</button>
+    Махаллы · по числу антенн
+    <button class="reset" id="reset">✕ Сброс</button>
   </div>
   <div id="list"></div>
 
   <div class="note" id="note"></div>
   <div class="foot">
-    <button id="exportCsv">⬇ Export CSV</button>
-    <button id="fit">🎯 Fit to all</button>
+    <button id="exportCsv">⬇ Экспорт CSV</button>
+    <button id="fit">🎯 Вся карта</button>
   </div>
-  <div class="note" style="text-align:center">Free &amp; open — CARTO · OSM · Esri. No key, no billing.</div>
+  <div class="note" style="text-align:center">Бесплатные карты — © CARTO · OSM · Esri</div>
 </aside>
 
 <div id="map"></div>
+<button id="navOpen" class="nav-open" title="Показать панель">☰ Реестр</button>
 <div id="tip"></div>
 
 <!-- (Google API-key popup removed — this build runs on free OpenStreetMap) -->
@@ -213,7 +315,8 @@ const REGISTRY = [{"m": "махаллаи Бинихисорак", "h": "", "c":
   ];
 
   let map, infoWindow, deckOverlay;
-  let showAnt = true, showMarks = true, showHubs = true, viewMode = "dots";
+  const HUB_RADIUS_M = 9000;   // coverage radius of each big antenna
+  let showAnt = true, showMarks = true, showHubs = true, showRadius = true, viewMode = "dots";
   let antennas = [];      // { position:[lng,lat], ri }  — one per physical antenna (~8278)
   let famMarkers = [];    // native google markers at mahalla centers
   let hubMarkers = [];    // the big-antenna tower markers
@@ -225,6 +328,7 @@ const REGISTRY = [{"m": "махаллаи Бинихисорак", "h": "", "c":
   FAMILIES.forEach((f) => { f.rgb = hexToRgb(f.color); });
   function escapeHtml(s){ return String(s).replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c])); }
   function fmt(n){ return n.toLocaleString("ru-RU"); }
+  function plural(n, f){ const a = Math.abs(n) % 100, b = a % 10; return f[(a > 10 && a < 20) ? 2 : (b > 1 && b < 5) ? 1 : (b === 1) ? 0 : 2]; }
   function hashStr(s){ let h=2166136261; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619);} return h>>>0; }
   function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
 
@@ -273,6 +377,17 @@ const REGISTRY = [{"m": "махаллаи Бинихисорак", "h": "", "c":
   }
   function makeLayers(){
     const layers = [ basemapLayer() ];
+    if (showHubs && showRadius){
+      layers.push(new deck.ScatterplotLayer({
+        id: "hub-radius", data: HUBS,
+        getPosition: (h) => [h.lng, h.lat],
+        getRadius: HUB_RADIUS_M, radiusUnits: "meters",
+        filled: true, getFillColor: [225, 29, 72, 13],
+        stroked: true, getLineColor: [225, 29, 72, 150],
+        lineWidthUnits: "pixels", getLineWidth: 1.5,
+        pickable: false, parameters: { depthTest: false },
+      }));
+    }
     if (showAnt && antennas.length){
       const data = activeData();
       if (viewMode === "heatmap"){
@@ -310,11 +425,11 @@ const REGISTRY = [{"m": "махаллаи Бинихисорак", "h": "", "c":
     if (!info || !info.object) return;
     const r = REGISTRY[info.object.ri];
     infoWindow.setContent(
-      '<div style="font:14px/1.5 -apple-system,BlinkMacSystemFont,sans-serif;color:#111;max-width:240px">'
-      + '<b>махаллаи ' + escapeHtml(r.m.replace(/^махал+аи\s*/i,"")) + "</b>"
-      + (r.h ? '<br><span style="color:#333">хона / кӯча: ' + escapeHtml(r.h) + "</span>" : "")
-      + '<br><span style="color:#c0392b;font-weight:700">' + fmt(r.c) + " антенна</span>"
-      + (r.ap ? '<br><span style="color:#b8860b;font-size:12px">≈ тахминӣ (махалла-дараҷа)</span>' : "")
+      '<div class="pop">'
+      + '<div class="t">махаллаи ' + escapeHtml(r.m.replace(/^махал+аи\s*/i,"")) + "</div>"
+      + (r.h ? '<div class="mut">хона / кӯча: ' + escapeHtml(r.h) + "</div>" : "")
+      + '<div class="red">' + fmt(r.c) + " антенна</div>"
+      + (r.ap ? '<div class="apx">≈ тахминӣ (махалла-дараҷа)</div>' : "")
       + "</div>"
     );
     infoWindow.setPosition({ lat: info.object.position[1], lng: info.object.position[0] });
@@ -353,11 +468,12 @@ const REGISTRY = [{"m": "махаллаи Бинихисорак", "h": "", "c":
   function hubInfo(i){
     const hb = HUBS[i];
     infoWindow.setContent(
-      '<div style="font:14px/1.5 -apple-system,BlinkMacSystemFont,sans-serif;color:#111;max-width:240px">'
-      + '<b style="font-size:15px">📡 Большая антенна ' + (i + 1) + "</b>"
-      + (hb.label ? '<br><span style="color:#333">' + escapeHtml(hb.label) + "</span>" : "")
-      + '<br><span style="color:#555;font-size:12px">' + hb.lat.toFixed(6) + ", " + hb.lng.toFixed(6) + "</span>"
-      + '<br><a href="https://yandex.ru/maps/?pt=' + hb.lng + "," + hb.lat + '&z=17&l=map" target="_blank" rel="noopener" style="color:#c0392b;font-size:12px">Открыть в Яндекс ↗</a>'
+      '<div class="pop">'
+      + '<div class="t">📡 Большая антенна ' + (i + 1) + "</div>"
+      + (hb.label ? '<div class="mut">' + escapeHtml(hb.label) + "</div>" : "")
+      + '<div class="red">Радиус покрытия — 9 км</div>'
+      + '<div class="mut sm">' + hb.lat.toFixed(6) + ", " + hb.lng.toFixed(6) + "</div>"
+      + '<a href="https://yandex.ru/maps/?pt=' + hb.lng + "," + hb.lat + '&z=17&l=map" target="_blank" rel="noopener">Открыть в Яндекс ↗</a>'
       + "</div>"
     );
     infoWindow.setPosition({ lat: hb.lat, lng: hb.lng });
@@ -368,11 +484,10 @@ const REGISTRY = [{"m": "махаллаи Бинихисорак", "h": "", "c":
   function famInfo(i){
     const f = FAMILIES[i];
     infoWindow.setContent(
-      '<div style="font:14px/1.5 -apple-system,BlinkMacSystemFont,sans-serif;color:#111;max-width:250px">'
-      + '<b style="font-size:15px">махаллаи ' + escapeHtml(f.label) + "</b>"
-      + '<br><span style="color:#c0392b;font-weight:700">' + fmt(f.count) + " антенна</span>"
-      + '<span style="color:#555"> · ' + f.rows + " суроға</span>"
-      + (f.approx ? '<br><span style="color:#b8860b;font-size:12px">≈ тахминӣ ҷойгиршавӣ</span>' : "")
+      '<div class="pop">'
+      + '<div class="t">махаллаи ' + escapeHtml(f.label) + "</div>"
+      + '<div><span class="red">' + fmt(f.count) + ' антенна</span><span class="mut"> · ' + f.rows + " суроға</span></div>"
+      + (f.approx ? '<div class="apx">≈ тахминӣ ҷойгиршавӣ</div>' : "")
       + "</div>"
     );
     infoWindow.setPosition({ lat: f.lat, lng: f.lng });
@@ -381,6 +496,7 @@ const REGISTRY = [{"m": "махаллаи Бинихисорак", "h": "", "c":
   function selectFam(i, isolate){
     activeFam = (activeFam === i && isolate) ? null : i;   // click again to un-isolate
     if (activeFam != null){
+      if (isMobile()) setSheet(true);            // drop the sheet so the map is visible
       map.panTo([FAMILIES[i].lng, FAMILIES[i].lat]);
       if (map.getZoom() < 14) map.setZoom(14);
       famInfo(i);
@@ -396,14 +512,14 @@ const REGISTRY = [{"m": "махаллаи Бинихисорак", "h": "", "c":
     const shown = FAMILIES
       .map((f, i) => ({ f, i }))
       .filter((x) => !q || x.f.label.toLowerCase().includes(q) || x.f.key.toLowerCase().includes(q));
-    if (!shown.length){ $list.innerHTML = '<div class="empty">No mahalla matches “' + escapeHtml(query) + '”.</div>'; }
+    if (!shown.length){ $list.innerHTML = '<div class="empty">Ничего не найдено по запросу «' + escapeHtml(query) + '».</div>'; }
     shown.forEach(({ f, i }) => {
       const el = document.createElement("div");
       el.className = "item" + (activeFam === i ? " active" : "");
       el.innerHTML =
         '<div class="dot" style="background:' + f.color + '"></div>'
         + '<div class="body"><div class="name">' + escapeHtml(f.label) + (f.approx ? ' <span class="apx" title="approximate location">≈</span>' : "") + "</div>"
-        + '<div class="meta">' + f.rows + (f.rows === 1 ? " address" : " addresses") + "</div></div>"
+        + '<div class="meta">' + f.rows + " " + plural(f.rows, ["адрес", "адреса", "адресов"]) + "</div></div>"
         + '<div class="cnt">' + fmt(f.count) + "</div>";
       el.onclick = () => selectFam(i, true);
       $list.appendChild(el);
@@ -416,18 +532,28 @@ const REGISTRY = [{"m": "махаллаи Бинихисорак", "h": "", "c":
     $("stAnt").textContent = fmt(totalAnt);
     $("stAddr").textContent = fmt(totalRows);
     $("stMah").textContent = FAMILIES.length;
+    $("shAnt").textContent = fmt(totalAnt);
+    $("shMah").textContent = FAMILIES.length;
     const apxAnt = FAMILIES.filter((f) => f.approx).reduce((s, f) => s + f.count, 0);
-    $("note").innerHTML = "Points are placed at their real mahalla; antennas scatter tightly around each address. "
-      + "<b>≈</b> marks " + FAMILIES.filter((f)=>f.approx).length + " mahallas ("
-      + Math.round(100 * apxAnt / totalAnt) + "% of antennas) placed approximately — not precisely geocoded.";
+    $("note").innerHTML = "Точки стоят в своей махалле; антенны группируются вокруг каждого адреса. "
+      + "<b>≈</b> — " + FAMILIES.filter((f)=>f.approx).length + " махалл ("
+      + Math.round(100 * apxAnt / totalAnt) + "% антенн) размещены приблизительно.";
   }
 
   function fitAll(){
     if (!map) return;
     const b = new maplibregl.LngLatBounds();
     FAMILIES.forEach((f) => b.extend([f.lng, f.lat]));
-    HUBS.forEach((h) => b.extend([h.lng, h.lat]));
-    map.fitBounds(b, { padding: 60, maxZoom: 15 });
+    const withR = showHubs && showRadius, dLat = HUB_RADIUS_M / 111320;
+    HUBS.forEach((h) => {
+      if (withR){                                  // include the full 9 km circles in the view
+        const dLng = HUB_RADIUS_M / (111320 * Math.cos(h.lat * Math.PI / 180));
+        b.extend([h.lng - dLng, h.lat - dLat]); b.extend([h.lng + dLng, h.lat + dLat]);
+      } else b.extend([h.lng, h.lat]);
+    });
+    const pad = isMobile() ? { top: 20, right: 20, bottom: 78, left: 20 } : 60;
+    // instant jump: animated fitBounds gets cancelled by the boot-time resize kicks
+    map.fitBounds(b, { padding: pad, maxZoom: 15, duration: 0 });
   }
 
   // ---- map: MapLibre handles camera/interaction (blank bg); base tiles render via deck.gl ----
@@ -487,7 +613,8 @@ const REGISTRY = [{"m": "махаллаи Бинихисорак", "h": "", "c":
   $("search").addEventListener("input", (e) => { query = e.target.value; renderList(); });
   $("tgAnt").onchange = (e) => { showAnt = e.target.checked; refreshDeck(); };
   $("tgMarks").onchange = (e) => { showMarks = e.target.checked; buildFamMarkers(); };
-  $("tgHubs").onchange = (e) => { showHubs = e.target.checked; buildHubMarkers(); };
+  $("tgHubs").onchange = (e) => { showHubs = e.target.checked; buildHubMarkers(); refreshDeck(); };
+  $("tgRadius").onchange = (e) => { showRadius = e.target.checked; refreshDeck(); };
   $("mapStyle").onchange = (e) => {
     baseTiles = TILESETS[e.target.value] || TILESETS.voyager;
     const bg = (e.target.value === "dark" || e.target.value === "satellite") ? "#0b0f18" : "#e9edf0";
@@ -503,7 +630,37 @@ const REGISTRY = [{"m": "махаллаи Бинихисорак", "h": "", "c":
     };
   });
   $("reset").onclick = showAllFams;
-  $("fit").onclick = () => { if (activeFam != null) showAllFams(); else fitAll(); };
+  $("fit").onclick = () => { if (isMobile()) setSheet(true); if (activeFam != null) showAllFams(); else fitAll(); };
+
+  // ---- responsive panel: mobile bottom sheet + desktop collapse ----
+  const mqMobile = window.matchMedia("(max-width: 720px)");
+  function isMobile(){ return mqMobile.matches; }
+  function setSheet(collapsed){
+    document.body.classList.toggle("sheet-collapsed", collapsed);
+    $("sheetToggle").setAttribute("aria-expanded", String(!collapsed));
+  }
+  $("sheetToggle").addEventListener("click", () => setSheet(!document.body.classList.contains("sheet-collapsed")));
+  (function(){                                     // swipe the handle up/down
+    let y0 = null;
+    const t = $("sheetToggle");
+    t.addEventListener("touchstart", (e) => { y0 = e.touches[0].clientY; }, { passive: true });
+    t.addEventListener("touchend", (e) => {
+      if (y0 == null) return;
+      const dy = e.changedTouches[0].clientY - y0; y0 = null;
+      e.preventDefault();                          // swallow the synthetic click that follows
+      if (dy > 24) setSheet(true);
+      else if (dy < -24) setSheet(false);
+      else setSheet(!document.body.classList.contains("sheet-collapsed"));
+    }, { passive: false });
+  })();
+  $("navCollapse").onclick = () => { document.body.classList.add("nav-hidden"); setTimeout(kick, 320); };
+  $("navOpen").onclick = () => { document.body.classList.remove("nav-hidden"); setTimeout(kick, 320); };
+  if (mqMobile.addEventListener) mqMobile.addEventListener("change", () => {
+    document.body.classList.remove("nav-hidden");
+    setSheet(isMobile());                          // phones start collapsed, desktop always open
+    kick();
+  });
+  if (isMobile()) setSheet(true);                  // map-first on phones
   $("exportCsv").onclick = () => {
     const rows = [["mahalla","house","antennas","lat","lng","approx"]];
     REGISTRY.forEach((r) => rows.push([r.m, r.h, r.c, r.lat, r.lng, r.ap ? "approx" : "geocoded"]));
