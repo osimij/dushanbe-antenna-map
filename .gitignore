@@ -1,0 +1,12 @@
+# macOS
+.DS_Store
+
+# Raw source data — keep out of the repo (sensitive, not needed to run the app)
+*.xlsx
+
+# Iteration backups (kept locally, not deployed)
+*backup*.html
+
+# Dependencies / tooling
+node_modules/
+.vercel
