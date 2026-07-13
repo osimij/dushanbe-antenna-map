@@ -1,22 +1,29 @@
 # Dushanbe Antenna Map — ЧДММ «Дилшод»
 
 Interactive map of the **Dilshod** antenna registry in Dushanbe, Tajikistan.
-A single self-contained web page — **no API key, no billing, no build step.**
+A single self-contained web page — **no build step, no API keys, no billing**.
 
 - **8,278 antennas** across **450 addresses** in **35 mahallas** (registry dated 01.05.24)
-- **Dots** view (every antenna, GPU-rendered) and **Heatmap** view of density
-- Searchable mahalla list — click to isolate & zoom to a neighborhood
-- Switchable base maps: **Voyager / Light / Dark / Satellite / OSM** (all free)
-- Export the registry to **CSV**
+- **Dots** view (every antenna, colored by mahalla) and **Heatmap** density view
+- **8 big-antenna tower sites** — click any tower (on the map or in the «Вышки» tab)
+  to see its real street address, coordinates, 9 km coverage radius, and links to
+  Google Maps / Yandex Maps
+- Click any antenna dot to see the address behind it (mahalla, house/street, count)
+- Searchable mahalla list — click to isolate a neighborhood (everything else dims)
+- Three free basemaps: **Тёмная** (dark), **Улицы** (streets), **Спутник** (satellite)
+- Optional 9 km coverage-circle overlay · Export the registry to **CSV**
+- Desktop: floating glass panel · Mobile: map-first with a swipeable bottom sheet
 
 ## Tech
 
-- [MapLibre GL JS](https://maplibre.org/) — camera & interaction (open-source)
-- [deck.gl](https://deck.gl/) — GPU rendering of the base tiles + thousands of antenna points
-- Free, keyless map tiles: **CARTO** basemaps, **Esri** World Imagery (satellite), **OpenStreetMap**
-
-Everything is loaded from CDNs at runtime and the data is baked into `index.html`, so the
-site is 100% static — nothing to install or configure.
+- [MapLibre GL JS](https://maplibre.org/) — free, open-source vector map renderer
+  (smooth zoom/rotate, WebGL)
+- [CARTO basemaps](https://carto.com/basemaps) (dark / streets vector tiles) and
+  [Esri World Imagery](https://www.arcgis.com/home/item.html?id=10df2279f9684e4a9f6a7f08febac2a9) (satellite) — no key required
+- Antennas render as a GeoJSON circle layer (all 8,278 points), density as a native
+  heatmap layer; towers and mahalla centers are DOM markers
+- Registry data is baked into `index.html`; tower addresses reverse-geocoded once
+  via OpenStreetMap Nominatim
 
 ## Run locally
 
