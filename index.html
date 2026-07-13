@@ -208,7 +208,9 @@
   }
   .mhl:hover { transform: scale(1.35); }
 
-  .hub { position: relative; width: 46px; height: 46px; cursor: pointer; }
+  /* no `position` here — it must stay `absolute` from .maplibregl-marker, or the
+     marker joins normal flow and drifts off its coordinate as the map zooms */
+  .hub { width: 46px; height: 46px; cursor: pointer; }
   .hub .ring, .hub .ring2 {
     position: absolute; inset: 0; border-radius: 50%; border: 2.5px solid var(--tower);
     animation: pulse 2.6s cubic-bezier(.2,.6,.36,1) infinite;
