@@ -201,12 +201,15 @@
   #mapbar .seg button { padding: 7px 13px; font-size: 12px; }
 
   /* ═══════════════ map markers ═══════════════ */
-  .mhl {
-    width: 15px; height: 15px; border-radius: 50%; cursor: pointer;
+  /* marker root must stay untouched: MapLibre drives its inline `transform` every
+     frame, so no transition/transform here — visuals live on the inner .mdot */
+  .mhl { width: 15px; height: 15px; cursor: pointer; }
+  .mhl .mdot {
+    display: block; width: 100%; height: 100%; border-radius: 50%;
     box-shadow: 0 0 0 2px rgba(255,255,255,.75), 0 2px 8px rgba(0,0,0,.6);
     transition: transform .15s var(--ease);
   }
-  .mhl:hover { transform: scale(1.35); }
+  .mhl:hover .mdot { transform: scale(1.35); }
 
   /* no `position` here — it must stay `absolute` from .maplibregl-marker, or the
      marker joins normal flow and drifts off its coordinate as the map zooms */
@@ -561,7 +564,10 @@ function buildMahMarkers(){
   if (!showMarks) return;
   FAMILIES.forEach((f, i) => {
     const el = document.createElement("div");
-    el.className = "mhl"; el.style.background = f.color;
+    el.className = "mhl";
+    const dot = document.createElement("span");
+    dot.className = "mdot"; dot.style.background = f.color;
+    el.appendChild(dot);
     el.title = f.label + " — " + fmt(f.count) + " " + plural(f.count, ["антенна","антенны","антенн"]);
     el.addEventListener("click", (e) => { e.stopPropagation(); selectFam(i, true); });
     mahMarkers.push(new maplibregl.Marker({ element: el }).setLngLat([f.lng, f.lat]).addTo(map));
