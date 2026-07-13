@@ -4,7 +4,7 @@ Interactive map of the **Dilshod** antenna registry in Dushanbe, Tajikistan.
 A single self-contained web page — **no build step, no API keys, no billing**.
 
 - **8,278 antennas** across **450 addresses** in **35 mahallas** (registry dated 01.05.24)
-- **Dots** view (every antenna, colored by mahalla) and **Heatmap** density view
+- Every antenna drawn as a dot, colored by mahalla
 - **8 big-antenna tower sites** — click any tower (on the map or in the «Вышки» tab)
   to see its real street address, coordinates, 9 km coverage radius, and links to
   Google Maps / Yandex Maps
@@ -20,8 +20,8 @@ A single self-contained web page — **no build step, no API keys, no billing**.
   (smooth zoom/rotate, WebGL)
 - [CARTO basemaps](https://carto.com/basemaps) (dark / streets vector tiles) and
   [Esri World Imagery](https://www.arcgis.com/home/item.html?id=10df2279f9684e4a9f6a7f08febac2a9) (satellite) — no key required
-- Antennas render as a GeoJSON circle layer (all 8,278 points), density as a native
-  heatmap layer; towers and mahalla centers are DOM markers
+- Antennas render as a GeoJSON circle layer (all 8,278 points); towers and mahalla
+  centers are DOM markers
 - Registry data is baked into `index.html`; tower addresses reverse-geocoded once
   via OpenStreetMap Nominatim
 
