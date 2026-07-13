@@ -51,11 +51,6 @@
     border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow);
     overflow: hidden; transition: transform .38s var(--ease), opacity .38s var(--ease);
   }
-  #panel::before {   /* signal-orange hairline on top */
-    content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px; z-index: 1;
-    background: linear-gradient(90deg, transparent, var(--accent) 18%, var(--accent-2) 55%, transparent 92%);
-    opacity: .9;
-  }
   body.panel-hidden #panel { transform: translateX(-112%); opacity: 0; pointer-events: none; }
 
   #panelOpen {
@@ -70,16 +65,12 @@
 
   .sheet-toggle { display: none; }
 
-  .head { position: relative; padding: 16px 18px 13px; border-bottom: 1px solid var(--line); }
-  .head::after {  /* faint radar glow behind the header */
-    content: ""; position: absolute; inset: -40px -40px auto; height: 130px; pointer-events: none;
-    background: radial-gradient(60% 100% at 30% 0%, rgba(255, 107, 53, .13), transparent 70%);
-  }
+  .head { padding: 16px 18px 13px; border-bottom: 1px solid var(--line); }
   .brand { display: flex; align-items: center; gap: 11px; }
   .logo {
     flex: 0 0 auto; width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center;
     background: linear-gradient(145deg, #ff7a45, #e5330f); color: #fff;
-    box-shadow: 0 4px 14px rgba(255, 90, 40, .35), inset 0 1px 0 rgba(255,255,255,.35);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.35);
   }
   .logo svg { width: 21px; height: 21px; }
   .brand h1 {
@@ -120,7 +111,7 @@
     border: 0; background: transparent; color: var(--muted); font: 600 12px var(--body);
     padding: 6px 12px; border-radius: 8px; cursor: pointer; transition: background .18s, color .18s;
   }
-  .seg button.on { background: var(--accent); color: #fff; box-shadow: 0 2px 8px rgba(255,107,53,.4); }
+  .seg button.on { background: var(--accent); color: #fff; }
   .chips { display: flex; gap: 6px; flex-wrap: wrap; }
   .chip { position: relative; cursor: pointer; }
   .chip input { position: absolute; opacity: 0; pointer-events: none; }
@@ -132,7 +123,7 @@
   }
   .chip span::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: .5; }
   .chip input:checked + span { background: var(--accent-soft); border-color: rgba(255,107,53,.45); color: var(--accent-2); }
-  .chip input:checked + span::before { background: var(--accent); opacity: 1; box-shadow: 0 0 6px var(--accent); }
+  .chip input:checked + span::before { background: var(--accent); opacity: 1; }
   .chip:hover span { border-color: var(--line-2); }
 
   /* tabs */
@@ -165,7 +156,7 @@
   @keyframes rise { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: none; } }
   .item:hover { background: rgba(146,163,200,.07); border-color: var(--line); }
   .item.active { background: var(--accent-soft); border-color: rgba(255,107,53,.4); }
-  .swatch { flex: 0 0 auto; width: 13px; height: 13px; border-radius: 50%; box-shadow: 0 0 0 2px rgba(255,255,255,.16), 0 0 9px -1px currentColor; }
+  .swatch { flex: 0 0 auto; width: 13px; height: 13px; border-radius: 50%; box-shadow: 0 0 0 2px rgba(255,255,255,.16); }
   .item .body { flex: 1; min-width: 0; }
   .item .name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .item .meta { font-size: 11px; color: var(--muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -223,7 +214,7 @@
   .hub .core {
     position: absolute; inset: 6px; border-radius: 50%; display: grid; place-items: center; color: #fff;
     background: radial-gradient(circle at 50% 30%, #ff6478, #d91437 78%);
-    border: 2.5px solid rgba(255,255,255,.92); box-shadow: 0 4px 16px rgba(217, 20, 55, .55);
+    border: 2.5px solid rgba(255,255,255,.92); box-shadow: 0 3px 10px rgba(0, 0, 0, .5);
     transition: transform .15s var(--ease);
   }
   .hub:hover .core { transform: scale(1.12); }
@@ -252,7 +243,7 @@
   .pp { min-width: 190px; }
   .pp-k { font: 700 9.5px var(--body); letter-spacing: .13em; text-transform: uppercase; color: var(--accent-2); margin-bottom: 5px; display: flex; align-items: center; gap: 6px; }
   .pp-k.twr { color: var(--tower); }
-  .pp-k::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: currentColor; box-shadow: 0 0 7px currentColor; }
+  .pp-k::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
   .pp-t { font-size: 14.5px; font-weight: 700; line-height: 1.3; padding-right: 12px; }
   .pp-sub { font-size: 12px; color: var(--muted); margin-top: 2px; line-height: 1.45; }
   .pp-rows { margin-top: 9px; border-top: 1px solid var(--line); padding-top: 8px; display: flex; flex-direction: column; gap: 5px; }
@@ -371,10 +362,6 @@
       <input id="search" type="text" placeholder="Поиск махалли или вышки…" autocomplete="off" />
     </div>
     <div class="row">
-      <div class="seg" id="viewSeg">
-        <button data-v="dots" class="on">Точки</button>
-        <button data-v="heat">Плотность</button>
-      </div>
       <div class="chips">
         <label class="chip"><input type="checkbox" id="tgMarks" checked /><span>Махаллы</span></label>
         <label class="chip"><input type="checkbox" id="tgHubs" checked /><span>Вышки</span></label>
@@ -437,7 +424,7 @@ const STYLES = {
 
 /* ── state ── */
 let map, popup;
-let viewMode = "dots", activeFam = null, activeTab = "mah", query = "";
+let activeFam = null, activeTab = "mah", query = "";
 let showMarks = true, showHubs = true, showRadius = false;
 let mahMarkers = [], hubMarkers = [];
 let antennaGeo = null;
@@ -499,13 +486,11 @@ function applyIsolation(){
   if (activeFam == null){
     map.setPaintProperty("ant-dots", "circle-color", colorExpr());
     map.setPaintProperty("ant-dots", "circle-opacity", 0.8);
-    if (map.getLayer("ant-heat")) map.setFilter("ant-heat", null);
   } else {
     map.setPaintProperty("ant-dots", "circle-color",
       ["case", ["==", ["get", "fi"], activeFam], FAMILIES[activeFam].color, "#5b667f"]);
     map.setPaintProperty("ant-dots", "circle-opacity",
       ["case", ["==", ["get", "fi"], activeFam], 0.92, 0.05]);
-    if (map.getLayer("ant-heat")) map.setFilter("ant-heat", ["==", ["get", "fi"], activeFam]);
   }
 }
 
@@ -528,22 +513,7 @@ function addOverlays(){
   });
 
   map.addLayer({
-    id: "ant-heat", type: "heatmap", source: "antennas", maxzoom: 17.5,
-    layout: { visibility: viewMode === "heat" ? "visible" : "none" },
-    paint: {
-      "heatmap-weight": 1,
-      "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 10, 0.55, 15, 1.6],
-      "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 10, 14, 13, 26, 16, 44],
-      "heatmap-opacity": 0.85,
-      "heatmap-color": ["interpolate", ["linear"], ["heatmap-density"],
-        0, "rgba(20,20,60,0)", 0.15, "#1e3a8a", 0.35, "#0ea5e9",
-        0.55, "#2dd4a7", 0.75, "#facc15", 1, "#ff5a3c"],
-    },
-  });
-
-  map.addLayer({
     id: "ant-dots", type: "circle", source: "antennas",
-    layout: { visibility: viewMode === "dots" ? "visible" : "none" },
     paint: {
       "circle-color": colorExpr(),
       "circle-opacity": 0.8,
@@ -783,12 +753,6 @@ map.on("mousemove", "ant-dots", (e) => {
 /* ── UI ── */
 $("search").addEventListener("input", (e) => { query = e.target.value; renderList(); });
 
-document.querySelectorAll("#viewSeg button").forEach((b) => b.onclick = () => {
-  viewMode = b.dataset.v;
-  document.querySelectorAll("#viewSeg button").forEach((x) => x.classList.toggle("on", x === b));
-  if (map.getLayer("ant-dots")) map.setLayoutProperty("ant-dots", "visibility", viewMode === "dots" ? "visible" : "none");
-  if (map.getLayer("ant-heat")) map.setLayoutProperty("ant-heat", "visibility", viewMode === "heat" ? "visible" : "none");
-});
 document.querySelectorAll("#styleSeg button").forEach((b) => b.onclick = () => {
   document.querySelectorAll("#styleSeg button").forEach((x) => x.classList.toggle("on", x === b));
   document.body.classList.toggle("lightmap", b.dataset.s === "streets");
