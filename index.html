@@ -169,6 +169,11 @@
   .item .meta { font-size: 11px; color: var(--muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .item .cnt { font: 650 13px var(--body); color: var(--text); font-variant-numeric: tabular-nums; }
   .item .cnt small { display: block; font: 500 9px var(--body); color: var(--faint); letter-spacing: .01em; text-align: right; }
+  .item .gateway-counts { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; min-width: 72px; }
+  .item .gateway-counts .metric { display: flex; align-items: baseline; justify-content: flex-end; gap: 5px; line-height: 1; }
+  .item .gateway-counts b { font: 650 13px var(--body); font-variant-numeric: tabular-nums; }
+  .item .gateway-counts small { display: inline; min-width: 30px; font-size: 9px; text-align: left; }
+  .item .gateway-counts .without-id b { color: var(--muted); }
   .apx { color: var(--accent-2); font-weight: 700; }
   .item .name .code {
     display: inline-block; margin-right: 6px; padding: 1px 5px; border-radius: 5px;
@@ -454,6 +459,7 @@ function mulberry32(a){ return function(){ a |= 0; a = a + 0x6D2B79F5 | 0; let t
 function buildAntennas(){
   const feats = [];
   const gatewayCursors = Array(HUBS.length).fill(0);
+  HUBS.forEach((hub) => { hub.noId = 0; });
   const mLat = 111320, base = 111320 * Math.cos(38.57 * Math.PI / 180);
   for (let ri = 0; ri < REGISTRY.length; ri++){
     const r = REGISTRY[ri];
@@ -475,6 +481,7 @@ function buildAntennas(){
           buildingType: placement?.t || "",
         },
       });
+      if (!assigned) HUBS[gi].noId++;
     };
     const resolved = ASSIGNMENT_DATA.resolvedRows?.[ri];
     if (resolved){
@@ -652,7 +659,8 @@ function openHub(i, fly){
     + '<div class="pp-sub">' + esc(h.area) + '</div>'
     + '<div class="pp-rows">'
     +   '<div class="pp-row"><span>Gateway ID</span><b>' + esc(h.gatewayId) + '</b></div>'
-    +   '<div class="pp-row"><span>Доступных Module ID</span><b style="color:' + h.color + '">' + fmt(h.capacity) + '</b></div>'
+    +   '<div class="pp-row"><span>Модулей с ID</span><b style="color:' + h.color + '">' + fmt(h.capacity) + '</b></div>'
+    +   '<div class="pp-row"><span>Модулей без ID</span><b>' + fmt(h.noId) + '</b></div>'
     +   '<div class="pp-row"><span>Радиус покрытия</span><b class="hot">9 км</b></div>'
     +   '<div class="pp-row"><span>Координаты</span><b>' + h.lat.toFixed(6) + ', ' + h.lng.toFixed(6) + '</b></div>'
     + '</div>'
@@ -747,7 +755,10 @@ function renderList(){
         + '<div class="body"><div class="name"><span class="code">' + esc(hubName(h, i)) + '</span></div>'
         + '<div class="meta">' + esc(h.gatewayId) + '</div>'
         + '<div class="meta">' + esc(h.addr) + ' · ' + esc(h.area) + '</div></div>'
-        + '<div class="cnt" style="color:' + h.color + '">' + fmt(h.capacity) + '<small>Module ID</small></div>';
+        + '<div class="cnt gateway-counts">'
+        +   '<span class="metric"><b style="color:' + h.color + '">' + fmt(h.capacity) + '</b><small>с ID</small></span>'
+        +   '<span class="metric without-id"><b>' + fmt(h.noId) + '</b><small>без ID</small></span>'
+        + '</div>';
       el.onclick = () => openHub(i, true);
       $list.appendChild(el); shown++;
     });
