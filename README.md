@@ -1,29 +1,31 @@
-# Dushanbe Antenna Map — ЧДММ «Дилшод»
+# Dushanbe Antenna Map — Tojikelectrocomplect & Baylan
 
-Interactive map of the **Dilshod** antenna registry in Dushanbe, Tajikistan.
-A single self-contained web page — **no build step, no API keys, no billing**.
+Interactive antenna registry map for **Tojikelectrocomplect & Baylan** in Dushanbe, Tajikistan.
+Static files with **no build step**.
 
-- **8,278 antennas** across **450 addresses** in **35 mahallas** (registry dated 01.05.24)
-- Every antenna drawn as a dot, colored by mahalla
+- **8,282 module slots** across **450 register rows** in **35 mahallas**
+- **5,690 real Module IDs** assigned nearest-first while preserving each gateway's exact quota
+- **2,592 farther slots** retain their nearest-gateway classification but have no fabricated ID
+- The **2,506 modules in 30 rows without house numbers** are distributed across 2,506
+  unique nearby residential-building candidates from 2GIS before gateway distances are calculated
+- Eight gateway colors: solid dots have IDs; outlined dots do not
 - **8 big-antenna tower sites** — click any tower (on the map or in the «Вышки» tab)
   to see its real street address, coordinates, 9 km coverage radius, and links to
   Google Maps / Yandex Maps
-- Click any antenna dot to see the address behind it (mahalla, house/street, count)
+- Click any module dot to see its Module ID status, gateway, address, and distance
 - Searchable mahalla list — click to isolate a neighborhood (everything else dims)
-- Three free basemaps: **Тёмная** (dark), **Улицы** (streets), **Спутник** (satellite)
-- Optional 9 km coverage-circle overlay · Export the registry to **CSV**
+- Detailed **2GIS** vector map with buildings, streets, places, and traffic control
+- Optional 9 km coverage-circle overlay · Export the module assignment to **CSV**
 - Desktop: floating glass panel · Mobile: map-first with a swipeable bottom sheet
 
 ## Tech
 
-- [MapLibre GL JS](https://maplibre.org/) — free, open-source vector map renderer
-  (smooth zoom/rotate, WebGL)
-- [CARTO basemaps](https://carto.com/basemaps) (dark / streets vector tiles) and
-  [Esri World Imagery](https://www.arcgis.com/home/item.html?id=10df2279f9684e4a9f6a7f08febac2a9) (satellite) — no key required
-- Antennas render as a GeoJSON circle layer (all 8,278 points); towers and mahalla
+- [2GIS MapGL JS API](https://docs.2gis.com/en/mapgl/overview/features) — detailed
+  2GIS vector map, labels, buildings, places, traffic, and WebGL rendering
+- Modules render as GeoJSON point layers (all 8,282 points); towers and mahalla
   centers are DOM markers
-- Registry data is baked into `index.html`; tower addresses reverse-geocoded once
-  via OpenStreetMap Nominatim
+- Registry data is baked into `index.html`; the generated nearest-first assignment is
+  stored in `assignment-data.js`
 
 ## Run locally
 
@@ -33,6 +35,10 @@ Just open `index.html` in a browser, or serve the folder:
 python3 -m http.server 8000
 # then open http://localhost:8000
 ```
+
+The 2GIS browser API key is stored in `index.html`. Before publishing, restrict the
+key to the production domain in 2GIS Platform Manager. The current key is a demo key
+and the map will stop loading when its demo subscription expires.
 
 ## Deploy to Vercel
 
@@ -55,8 +61,15 @@ show up immediately. The Excel source and backup files are excluded via `.vercel
 
 ## Data notes
 
-- Positions are **mahalla-level**, not exact rooftops: each address's antennas are
-  scattered tightly (~55 m) around its geocoded point.
+- Rows with a known house number remain tightly scattered around their mapped address.
+  Rows without a house number are placed one module per selected residential-building candidate.
+- The assignment is a geographic planning estimate, not field-confirmed billing data.
+- Two embedded Zarafshon house numbers were corrected, and one blank plus three zero
+  module counts were corrected to one.
+- The 30 missing-address rows use deterministic building selection within their mahalla
+  area. Mahalla centers were corrected with named GeoNames localities and 2GIS
+  streets/settlements; unmatched names retain the Register map coordinate. Public
+  street/house labels and 2GIS building references are kept for audit.
 - **~15% of mahallas** (marked `≈` in the UI) are placed approximately — geocoded to the
   neighborhood, not a precise coordinate.
 - To refine to exact coordinates, supply real lat/lng for those addresses.

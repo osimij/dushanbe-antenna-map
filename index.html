@@ -3,144 +3,151 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Дилшод · Карта антенн Душанбе</title>
+<title>Tojikelectrocomplect &amp; Baylan · Реестр антенн</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📡</text></svg>" />
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;600;700&family=Golos+Text:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet" />
-<link href="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.css" rel="stylesheet" />
 <style>
   :root {
-    --ink: #070a11;
-    --glass: rgba(12, 17, 28, .88);
-    --glass-2: rgba(20, 27, 42, .92);
-    --raise: #161e30;
-    --line: rgba(146, 163, 200, .16);
-    --line-2: rgba(146, 163, 200, .30);
-    --text: #ecf0f9;
-    --muted: #8d99b5;
-    --faint: #5b667f;
-    --accent: #ff6b35;
-    --accent-2: #ffb454;
-    --accent-soft: rgba(255, 107, 53, .14);
-    --tower: #ff3d5a;
-    --ok: #2dd4a7;
-    --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
-    --disp: "Unbounded", "Golos Text", sans-serif;
-    --body: "Golos Text", -apple-system, "Segoe UI", Roboto, sans-serif;
+    color-scheme: light;
+    --ink: #eef1f5;
+    --glass: rgba(255, 255, 255, .94);
+    --glass-2: rgba(255, 255, 255, .97);
+    --raise: #f2f2f7;
+    --line: rgba(60, 60, 67, .12);
+    --line-2: rgba(60, 60, 67, .20);
+    --text: #1d1d1f;
+    --muted: #6e6e73;
+    --faint: #8e8e93;
+    --accent: #007aff;
+    --accent-2: #0066d6;
+    --accent-soft: rgba(0, 122, 255, .10);
+    --tower: #ff3b30;
+    --ok: #34c759;
+    --mono: ui-monospace, "SFMono-Regular", SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    --disp: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
+    --body: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
     --peek: calc(64px + env(safe-area-inset-bottom, 0px));
-    --ease: cubic-bezier(.32, .72, .24, 1);
-    --shadow: 0 18px 50px rgba(0, 0, 0, .55), 0 2px 10px rgba(0, 0, 0, .4);
+    --ease: cubic-bezier(.32, .72, 0, 1);
+    --shadow: 0 18px 48px rgba(0, 0, 0, .14), 0 2px 8px rgba(0, 0, 0, .06);
   }
   * { box-sizing: border-box; }
   html, body { height: 100%; margin: 0; }
   body {
     font-family: var(--body); color: var(--text); background: var(--ink);
     height: 100vh; height: 100dvh; overflow: hidden; overscroll-behavior: none;
-    -webkit-tap-highlight-color: transparent;
+    -webkit-tap-highlight-color: transparent; -webkit-font-smoothing: antialiased;
   }
 
-  #map { position: absolute; inset: 0; background: var(--ink); }
+  #map { position: absolute; z-index: 0; inset: 0; background: var(--ink); }
   #map canvas { outline: none; }
+  button:focus-visible, a:focus-visible, input:focus-visible {
+    outline: 3px solid rgba(0, 122, 255, .28); outline-offset: 2px;
+  }
 
   /* ═══════════════ floating control panel ═══════════════ */
   #panel {
-    position: absolute; z-index: 30; top: 14px; left: 14px; bottom: 14px; width: 372px;
+    position: absolute; z-index: 30; top: 16px; left: 16px; bottom: 16px; width: 380px;
     display: flex; flex-direction: column;
-    background: var(--glass); backdrop-filter: blur(18px) saturate(1.3); -webkit-backdrop-filter: blur(18px) saturate(1.3);
-    border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow);
-    overflow: hidden; transition: transform .38s var(--ease), opacity .38s var(--ease);
+    background: var(--glass); backdrop-filter: blur(28px) saturate(1.15); -webkit-backdrop-filter: blur(28px) saturate(1.15);
+    border: 1px solid rgba(255, 255, 255, .82); border-radius: 22px; box-shadow: var(--shadow);
+    overflow: hidden; transition: transform .28s var(--ease), opacity .2s ease-out;
   }
   body.panel-hidden #panel { transform: translateX(-112%); opacity: 0; pointer-events: none; }
 
   #panelOpen {
-    position: absolute; z-index: 29; top: 14px; left: 14px; display: none; align-items: center; gap: 9px;
-    padding: 11px 16px; background: var(--glass); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-    color: var(--text); border: 1px solid var(--line); border-radius: 12px;
-    font: 600 13px/1 var(--body); letter-spacing: .02em; cursor: pointer; box-shadow: var(--shadow);
-    transition: border-color .15s;
+    position: absolute; z-index: 29; top: 16px; left: 16px; display: none; align-items: center; gap: 8px;
+    padding: 10px 14px; background: var(--glass); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    color: var(--text); border: 1px solid rgba(255, 255, 255, .82); border-radius: 13px;
+    font: 600 13px/1 var(--body); cursor: pointer; box-shadow: var(--shadow);
+    transition: transform .14s ease-out, background-color .16s ease;
   }
-  #panelOpen:hover { border-color: var(--accent); }
+  #panelOpen:active { transform: scale(.97); }
   body.panel-hidden #panelOpen { display: flex; }
 
   .sheet-toggle { display: none; }
 
-  .head { padding: 16px 18px 13px; border-bottom: 1px solid var(--line); }
+  .head { padding: 18px 18px 15px; border-bottom: 1px solid var(--line); }
   .brand { display: flex; align-items: center; gap: 11px; }
+  .brand > div:nth-child(2) { min-width: 0; flex: 1; }
   .logo {
-    flex: 0 0 auto; width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center;
-    background: linear-gradient(145deg, #ff7a45, #e5330f); color: #fff;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.35);
+    flex: 0 0 auto; width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center;
+    background: var(--accent); color: #fff;
   }
-  .logo svg { width: 21px; height: 21px; }
+  .logo svg { width: 22px; height: 22px; }
   .brand h1 {
-    margin: 0; font: 700 15px/1.15 var(--disp); letter-spacing: .14em; text-transform: uppercase;
+    margin: 0; font: 700 14px/1.18 var(--disp); letter-spacing: -.025em; white-space: nowrap;
   }
-  .brand h1 em { font-style: normal; color: var(--accent-2); }
-  .brand .sub { margin-top: 3px; font-size: 11.5px; color: var(--muted); letter-spacing: .01em; }
+  .brand h1 em { font-style: normal; color: var(--faint); font-weight: 500; }
+  .brand .sub { margin-top: 3px; font-size: 11px; color: var(--muted); letter-spacing: -.005em; }
   .navbtn {
-    margin-left: auto; flex: 0 0 auto; width: 28px; height: 28px; display: grid; place-items: center;
-    background: transparent; border: 1px solid var(--line); border-radius: 9px; color: var(--muted);
-    font-size: 15px; padding: 0 0 2px; cursor: pointer; transition: color .15s, border-color .15s;
+    margin-left: auto; flex: 0 0 auto; width: 30px; height: 30px; display: grid; place-items: center;
+    background: var(--raise); border: 0; border-radius: 9px; color: var(--muted);
+    font-size: 17px; padding: 0 0 2px; cursor: pointer;
+    transition: transform .14s ease-out, background-color .16s ease, color .16s ease;
   }
-  .navbtn:hover { color: var(--text); border-color: var(--accent); }
+  .navbtn:active { transform: scale(.94); }
 
-  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 13px; }
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; margin-top: 15px; }
   .stat {
-    background: rgba(146, 163, 200, .06); border: 1px solid var(--line); border-radius: 10px;
-    padding: 7px 4px 6px; text-align: center;
+    background: var(--raise); border: 0; border-radius: 11px;
+    padding: 8px 4px 7px; text-align: center;
   }
-  .stat b { display: block; font: 700 14.5px/1.1 var(--mono); letter-spacing: -.02em; }
-  .stat span { display: block; margin-top: 2px; font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: .09em; }
-  .stat.hot b { color: var(--accent-2); }
+  .stat b { display: block; font: 700 15px/1.1 var(--body); letter-spacing: -.02em; }
+  .stat span { display: block; margin-top: 3px; font-size: 9.5px; color: var(--muted); letter-spacing: .01em; }
+  .stat.hot b { color: var(--accent); }
 
-  .controls { padding: 12px 16px 11px; display: flex; flex-direction: column; gap: 10px; border-bottom: 1px solid var(--line); }
+  .controls { padding: 13px 16px 12px; display: flex; flex-direction: column; gap: 10px; border-bottom: 1px solid var(--line); }
   .search { position: relative; }
   .search input {
-    width: 100%; background: rgba(146, 163, 200, .07); border: 1px solid var(--line); color: var(--text);
-    border-radius: 11px; padding: 9px 12px 9px 34px; font: 500 13.5px var(--body); outline: none;
-    transition: border-color .15s, box-shadow .15s, background .15s;
+    width: 100%; background: var(--raise); border: 1px solid transparent; color: var(--text);
+    border-radius: 11px; padding: 9px 12px 9px 34px; font: 400 13.5px var(--body); outline: none;
+    transition: border-color .16s ease, box-shadow .16s ease, background-color .16s ease;
   }
   .search input::placeholder { color: var(--faint); }
-  .search input:focus { border-color: var(--accent); background: rgba(146,163,200,.04); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .search input:focus { border-color: rgba(0,122,255,.42); background: #fff; box-shadow: 0 0 0 3px var(--accent-soft); }
   .search svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; color: var(--faint); }
 
   .row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-  .seg { display: flex; background: rgba(146,163,200,.07); border: 1px solid var(--line); border-radius: 10px; padding: 2px; }
+  .seg { display: flex; background: var(--raise); border: 0; border-radius: 10px; padding: 2px; }
   .seg button {
     border: 0; background: transparent; color: var(--muted); font: 600 12px var(--body);
     padding: 6px 12px; border-radius: 8px; cursor: pointer; transition: background .18s, color .18s;
   }
-  .seg button.on { background: var(--accent); color: #fff; }
+  .seg button.on { background: #fff; color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.10); }
   .chips { display: flex; gap: 6px; flex-wrap: wrap; }
   .chip { position: relative; cursor: pointer; }
   .chip input { position: absolute; opacity: 0; pointer-events: none; }
   .chip span {
     display: inline-flex; align-items: center; gap: 5px; padding: 5.5px 10px; border-radius: 999px;
-    background: transparent; border: 1px solid var(--line); color: var(--faint);
+    background: var(--raise); border: 1px solid transparent; color: var(--muted);
     font-size: 11.5px; font-weight: 600; user-select: none; -webkit-user-select: none;
-    transition: all .18s;
+    transition: transform .14s ease-out, background-color .16s ease, border-color .16s ease, color .16s ease;
   }
   .chip span::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: .5; }
-  .chip input:checked + span { background: var(--accent-soft); border-color: rgba(255,107,53,.45); color: var(--accent-2); }
+  .chip input:checked + span { background: var(--accent-soft); border-color: rgba(0,122,255,.18); color: var(--accent-2); }
   .chip input:checked + span::before { background: var(--accent); opacity: 1; }
-  .chip:hover span { border-color: var(--line-2); }
+  .chip input:focus-visible + span { outline: 3px solid rgba(0,122,255,.22); outline-offset: 1px; }
+  .chip:active span { transform: scale(.97); }
+  .assignment-key { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 10.5px; }
+  .assignment-key span { display: inline-flex; align-items: center; gap: 5px; }
+  .assignment-key i { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); border: 1.5px solid var(--accent); }
+  .assignment-key .open { background: rgba(255,255,255,.9); opacity: .62; }
 
   /* tabs */
-  .tabs { display: flex; gap: 2px; padding: 10px 16px 0; }
+  .tabs { display: flex; gap: 2px; margin: 11px 16px 0; padding: 2px; background: var(--raise); border-radius: 10px; }
   .tab {
-    flex: 1; background: none; border: none; border-bottom: 2px solid transparent; color: var(--faint);
-    font: 700 11.5px var(--body); text-transform: uppercase; letter-spacing: .08em;
-    padding: 7px 4px 9px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 7px;
-    transition: color .18s, border-color .18s;
+    flex: 1; background: transparent; border: 0; color: var(--muted);
+    font: 600 12px var(--body); letter-spacing: -.005em;
+    padding: 7px 4px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 7px;
+    transition: transform .14s ease-out, color .16s ease, background-color .16s ease, box-shadow .16s ease;
   }
-  .tab .n { font: 700 10px/1.5 var(--mono); background: rgba(146,163,200,.12); border-radius: 999px; padding: 1px 7px; color: var(--muted); }
-  .tab.on { color: var(--text); border-bottom-color: var(--accent); }
+  .tab:active { transform: scale(.98); }
+  .tab .n { font: 600 10px/1.5 var(--body); background: rgba(60,60,67,.08); border-radius: 999px; padding: 1px 7px; color: var(--muted); }
+  .tab.on { color: var(--text); background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
   .tab.on .n { background: var(--accent-soft); color: var(--accent-2); }
-  .list-note { display: flex; align-items: center; padding: 9px 18px 3px; color: var(--faint); font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; }
+  .list-note { display: flex; align-items: center; padding: 11px 18px 3px; color: var(--faint); font-size: 10.5px; letter-spacing: .01em; }
   .list-note .reset {
     margin-left: auto; display: none; background: none; border: none; color: var(--accent);
-    font: 700 11px var(--body); letter-spacing: 0; text-transform: none; cursor: pointer; padding: 2px 4px;
+    font: 600 11px var(--body); letter-spacing: 0; cursor: pointer; padding: 2px 4px;
   }
   .list-note .reset:hover { text-decoration: underline; }
 
@@ -149,151 +156,143 @@
   #list::-webkit-scrollbar-thumb { background: var(--line); border-radius: 8px; }
 
   .item {
-    display: flex; align-items: center; gap: 11px; padding: 9px 10px; border-radius: 11px;
-    cursor: pointer; border: 1px solid transparent; animation: rise .4s var(--ease) both;
-    transition: background .15s, border-color .15s;
+    display: flex; align-items: center; gap: 11px; padding: 9px 10px; border-radius: 12px;
+    cursor: pointer; border: 1px solid transparent; animation: rise .28s var(--ease) both;
+    transition: transform .14s ease-out, background-color .16s ease, border-color .16s ease;
   }
   @keyframes rise { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: none; } }
-  .item:hover { background: rgba(146,163,200,.07); border-color: var(--line); }
-  .item.active { background: var(--accent-soft); border-color: rgba(255,107,53,.4); }
-  .swatch { flex: 0 0 auto; width: 13px; height: 13px; border-radius: 50%; box-shadow: 0 0 0 2px rgba(255,255,255,.16); }
+  .item:active { transform: scale(.985); }
+  .item.active { background: var(--accent-soft); border-color: rgba(0,122,255,.15); }
+  .swatch { flex: 0 0 auto; width: 13px; height: 13px; border-radius: 50%; border: 2px solid #fff; outline: 1px solid rgba(60,60,67,.12); }
   .item .body { flex: 1; min-width: 0; }
   .item .name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .item .meta { font-size: 11px; color: var(--muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .item .cnt { font: 700 13px var(--mono); color: var(--text); }
-  .item .cnt small { display: block; font: 500 8.5px var(--body); color: var(--faint); text-transform: uppercase; letter-spacing: .07em; text-align: right; }
+  .item .cnt { font: 650 13px var(--body); color: var(--text); font-variant-numeric: tabular-nums; }
+  .item .cnt small { display: block; font: 500 9px var(--body); color: var(--faint); letter-spacing: .01em; text-align: right; }
   .apx { color: var(--accent-2); font-weight: 700; }
   .item .name .code {
     display: inline-block; margin-right: 6px; padding: 1px 5px; border-radius: 5px;
-    background: rgba(255, 61, 90, .13); border: 1px solid rgba(255, 61, 90, .35);
-    color: var(--tower); font: 700 10.5px var(--mono); letter-spacing: .04em; vertical-align: 1px;
+    background: rgba(255, 59, 48, .09); border: 1px solid rgba(255, 59, 48, .16);
+    color: #d92d20; font: 650 10.5px var(--mono); letter-spacing: .02em; vertical-align: 1px;
   }
   .twr-ico {
     flex: 0 0 auto; width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center;
-    background: rgba(255, 61, 90, .13); border: 1px solid rgba(255, 61, 90, .35); color: var(--tower);
-    font: 700 12px var(--mono);
+    background: rgba(255, 59, 48, .09); border: 1px solid rgba(255, 59, 48, .16); color: #d92d20;
+    font: 700 12px var(--body);
   }
   .empty { padding: 26px 16px; color: var(--muted); font-size: 13px; text-align: center; line-height: 1.6; }
 
   .foot { border-top: 1px solid var(--line); padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0px)); display: flex; gap: 8px; }
   .foot button {
     flex: 1; display: flex; align-items: center; justify-content: center; gap: 7px;
-    background: rgba(146,163,200,.07); border: 1px solid var(--line); color: var(--text);
-    font: 600 12.5px var(--body); padding: 9px; border-radius: 10px; cursor: pointer;
-    transition: border-color .15s, background .15s;
+    background: var(--raise); border: 0; color: var(--text);
+    font: 600 12.5px var(--body); padding: 10px; border-radius: 11px; cursor: pointer;
+    transition: transform .14s ease-out, background-color .16s ease, color .16s ease;
   }
-  .foot button:hover { border-color: var(--accent); background: var(--accent-soft); }
+  .foot button:active { transform: scale(.97); }
   .foot button svg { width: 14px; height: 14px; color: var(--muted); }
-  .foot button:hover svg { color: var(--accent-2); }
-
-  /* ═══════════════ floating map bar (top-right) ═══════════════ */
-  #mapbar {
-    position: absolute; z-index: 25; top: 14px; right: 14px; display: flex; gap: 8px; align-items: center;
-  }
-  #mapbar .seg {
-    background: var(--glass); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-    box-shadow: var(--shadow);
-  }
-  #mapbar .seg button { padding: 7px 13px; font-size: 12px; }
 
   /* ═══════════════ map markers ═══════════════ */
-  /* marker root must stay untouched: MapLibre drives its inline `transform` every
-     frame, so no transition/transform here — visuals live on the inner .mdot */
+  /* MapGL positions the marker container; animations stay on inner elements. */
   .mhl { width: 15px; height: 15px; cursor: pointer; }
   .mhl .mdot {
     display: block; width: 100%; height: 100%; border-radius: 50%;
-    box-shadow: 0 0 0 2px rgba(255,255,255,.75), 0 2px 8px rgba(0,0,0,.6);
-    transition: transform .15s var(--ease);
+    border: 2px solid rgba(255,255,255,.96); box-shadow: 0 1px 4px rgba(0,0,0,.22);
+    transition: transform .14s ease-out;
   }
-  .mhl:hover .mdot { transform: scale(1.35); }
+  .mhl:active .mdot { transform: scale(.9); }
 
-  /* no `position` here — it must stay `absolute` from .maplibregl-marker, or the
-     marker joins normal flow and drifts off its coordinate as the map zooms */
-  .hub { width: 46px; height: 46px; cursor: pointer; }
+  .hub { position: relative; width: 46px; height: 46px; cursor: pointer; }
   .hub .ring, .hub .ring2 {
-    position: absolute; inset: 0; border-radius: 50%; border: 2.5px solid var(--tower);
-    animation: pulse 2.6s cubic-bezier(.2,.6,.36,1) infinite;
+    display: none;
   }
-  .hub .ring2 { animation-delay: 1.3s; }
-  @keyframes pulse { 0% { transform: scale(.55); opacity: .9; } 75%, 100% { transform: scale(2.05); opacity: 0; } }
   .hub .core {
     position: absolute; inset: 6px; border-radius: 50%; display: grid; place-items: center; color: #fff;
-    background: radial-gradient(circle at 50% 30%, #ff6478, #d91437 78%);
-    border: 2.5px solid rgba(255,255,255,.92); box-shadow: 0 3px 10px rgba(0, 0, 0, .5);
-    transition: transform .15s var(--ease);
+    background: var(--tower); border: 2.5px solid rgba(255,255,255,.98); box-shadow: 0 2px 5px rgba(0, 0, 0, .24);
+    transition: transform .14s ease-out;
   }
-  .hub:hover .core { transform: scale(1.12); }
+  .hub:active .core { transform: scale(.92); }
   .hub .core svg { width: 17px; height: 17px; }
   .hub .num {
     position: absolute; top: -3px; right: -3px; z-index: 3; min-width: 19px; height: 19px; padding: 0 5px;
-    border-radius: 999px; background: #0b0f18; color: #fff; border: 2px solid #fff;
-    font: 700 10.5px/15px var(--mono); text-align: center;
+    border-radius: 999px; background: #3a3a3c; color: #fff; border: 2px solid #fff;
+    font: 700 10.5px/15px var(--body); text-align: center;
   }
 
-  /* ═══════════════ popups (MapLibre) ═══════════════ */
-  .maplibregl-popup { z-index: 40; max-width: 300px !important; }
-  .maplibregl-popup-content {
-    background: var(--glass-2); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-    color: var(--text); border: 1px solid var(--line-2); border-radius: 14px;
-    box-shadow: var(--shadow); padding: 13px 15px 12px; font-family: var(--body);
+  /* ═══════════════ popups (2GIS HtmlMarker) ═══════════════ */
+  .map-popup {
+    position: relative; width: min(300px, 84vw); transform: translate(-50%, calc(-100% - 17px));
+    background: var(--glass-2); backdrop-filter: blur(24px) saturate(1.1); -webkit-backdrop-filter: blur(24px) saturate(1.1);
+    color: var(--text); border: 1px solid rgba(255,255,255,.88); border-radius: 16px;
+    box-shadow: 0 12px 32px rgba(0,0,0,.16), 0 1px 4px rgba(0,0,0,.07); padding: 14px 16px 13px; font-family: var(--body);
   }
-  .maplibregl-popup-anchor-bottom .maplibregl-popup-tip { border-top-color: var(--glass-2); }
-  .maplibregl-popup-anchor-top .maplibregl-popup-tip { border-bottom-color: var(--glass-2); }
-  .maplibregl-popup-anchor-left .maplibregl-popup-tip { border-right-color: var(--glass-2); }
-  .maplibregl-popup-anchor-right .maplibregl-popup-tip { border-left-color: var(--glass-2); }
-  .maplibregl-popup-close-button {
-    color: var(--muted); font-size: 19px; right: 5px; top: 3px; border-radius: 7px; width: 24px; height: 24px;
+  .map-popup::after {
+    content: ""; position: absolute; left: 50%; bottom: -8px; width: 14px; height: 14px;
+    transform: translateX(-50%) rotate(45deg); background: rgba(255,255,255,.97);
+    border-right: 1px solid rgba(255,255,255,.88); border-bottom: 1px solid rgba(255,255,255,.88);
   }
-  .maplibregl-popup-close-button:hover { background: rgba(146,163,200,.12); color: var(--text); }
+  .popup-close {
+    position: absolute; z-index: 2; color: var(--muted); background: transparent; border: 0;
+    font: 400 20px/22px var(--body); right: 6px; top: 5px; border-radius: 7px; width: 24px; height: 24px;
+    cursor: pointer;
+  }
+  .popup-close:active { transform: scale(.9); background: var(--raise); }
   .pp { min-width: 190px; }
-  .pp-k { font: 700 9.5px var(--body); letter-spacing: .13em; text-transform: uppercase; color: var(--accent-2); margin-bottom: 5px; display: flex; align-items: center; gap: 6px; }
+  .pp-k { font: 650 10px var(--body); letter-spacing: .02em; color: var(--accent-2); margin-bottom: 5px; display: flex; align-items: center; gap: 6px; }
   .pp-k.twr { color: var(--tower); }
   .pp-k::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
   .pp-t { font-size: 14.5px; font-weight: 700; line-height: 1.3; padding-right: 12px; }
   .pp-sub { font-size: 12px; color: var(--muted); margin-top: 2px; line-height: 1.45; }
   .pp-rows { margin-top: 9px; border-top: 1px solid var(--line); padding-top: 8px; display: flex; flex-direction: column; gap: 5px; }
   .pp-row { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; font-size: 12px; color: var(--muted); }
-  .pp-row b { font: 600 12px var(--mono); color: var(--text); white-space: nowrap; }
+  .pp-row b { font: 600 12px var(--body); color: var(--text); white-space: nowrap; font-variant-numeric: tabular-nums; }
   .pp-row b.hot { color: var(--accent-2); font-size: 13px; }
   .pp-apx { margin-top: 7px; font-size: 11px; color: var(--accent-2); }
   .pp-actions { display: flex; gap: 12px; margin-top: 10px; border-top: 1px solid var(--line); padding-top: 9px; }
-  .pp-actions a { color: #ff8f66; font-size: 12px; font-weight: 600; text-decoration: none; }
+  .pp-actions a { color: var(--accent); font-size: 12px; font-weight: 600; text-decoration: none; }
   .pp-actions a:hover { text-decoration: underline; }
 
   /* hover tip */
   #tip {
     position: fixed; z-index: 60; display: none; pointer-events: none;
-    background: rgba(7, 10, 17, .94); color: #fff; border: 1px solid var(--line-2); border-radius: 8px;
-    padding: 6px 10px; font: 500 12px var(--body); max-width: 250px; box-shadow: 0 6px 20px rgba(0,0,0,.5);
+    background: rgba(44, 44, 46, .94); color: #fff; border: 0; border-radius: 9px;
+    padding: 7px 10px; font: 500 12px var(--body); max-width: 250px; box-shadow: 0 6px 20px rgba(0,0,0,.18);
   }
-  #tip b { font-family: var(--mono); color: var(--accent-2); }
+  #tip b { font-family: var(--body); color: #fff; font-variant-numeric: tabular-nums; }
 
-  /* MapLibre chrome, re-skinned */
-  .maplibregl-ctrl-group {
-    background: var(--glass) !important; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-    border: 1px solid var(--line); border-radius: 12px !important; box-shadow: var(--shadow) !important; overflow: hidden;
+  #mapError {
+    position: absolute; z-index: 80; top: 16px; left: 50%; transform: translateX(-50%); display: none;
+    max-width: min(520px, calc(100vw - 32px)); padding: 11px 14px; border-radius: 11px;
+    background: #7f1d1d; color: #fff; box-shadow: var(--shadow); font: 600 12.5px/1.45 var(--body);
   }
-  .maplibregl-ctrl-group button { width: 34px !important; height: 34px !important; border: none !important; }
-  .maplibregl-ctrl-group button + button { border-top: 1px solid var(--line) !important; }
-  .maplibregl-ctrl button .maplibregl-ctrl-icon { filter: invert(.85) hue-rotate(180deg); }
-  body.lightmap .maplibregl-ctrl button .maplibregl-ctrl-icon { filter: none; }
-  .maplibregl-ctrl-attrib {
-    background: rgba(7,10,17,.72) !important; color: var(--faint); font-size: 10px; border-radius: 8px 0 0 0;
+  #mapError.show { display: block; }
+
+  @media (hover: hover) and (pointer: fine) {
+    #panelOpen:hover, .navbtn:hover { background: #e9e9ee; color: var(--text); }
+    .chip:hover span { background: #e9e9ee; }
+    .item:hover { background: rgba(118,118,128,.08); border-color: rgba(60,60,67,.07); }
+    .foot button:hover { background: #e6e6eb; color: var(--accent-2); }
+    .foot button:hover svg { color: var(--accent); }
+    .mhl:hover .mdot { transform: scale(1.2); }
+    .hub:hover .core { transform: scale(1.06); }
+    .popup-close:hover { background: var(--raise); color: var(--text); }
+    .pp-actions a:hover { text-decoration: underline; }
   }
-  .maplibregl-ctrl-attrib a { color: var(--muted) !important; }
-  body.lightmap .maplibregl-ctrl-attrib { background: rgba(255,255,255,.72) !important; }
-  body.lightmap .maplibregl-ctrl-attrib a { color: #555 !important; }
-  .maplibregl-ctrl-scale {
-    background: rgba(7,10,17,.6); color: var(--muted); border: 1px solid var(--line-2); border-top: none;
-    font: 500 10px var(--mono); border-radius: 0 0 6px 6px;
+
+  @media (prefers-reduced-motion: reduce) {
+    #panel, #panelOpen, .navbtn, .chip span, .tab, .item, .foot button,
+    .mhl .mdot, .hub .core, .sheet-toggle .chev { transition-duration: .01ms !important; }
+    .item { animation: none; }
   }
 
   /* ═══════════════ mobile: bottom sheet ═══════════════ */
   @media (max-width: 720px) {
     #panel {
       top: auto; left: 0; right: 0; bottom: 0; width: 100%; max-height: 74dvh;
-      border-radius: 20px 20px 0 0; border-left: none; border-right: none; border-bottom: none;
-      transform: translateY(0); transition: transform .34s var(--ease);
+      background: rgba(255,255,255,.97); border-radius: 24px 24px 0 0;
+      border: 1px solid rgba(255,255,255,.9); border-bottom: none;
+      box-shadow: 0 -8px 30px rgba(0,0,0,.12);
+      transform: translateY(0); transition: transform .3s var(--ease);
     }
     body.sheet-collapsed #panel { transform: translateY(calc(100% - var(--peek))); opacity: 1; pointer-events: auto; }
     body.panel-hidden #panel { transform: translateY(0); opacity: 1; pointer-events: auto; }
@@ -303,38 +302,30 @@
       height: 64px; width: 100%; padding: 10px 16px 0; background: none; border: none; color: var(--text);
       font: 500 13px var(--body); cursor: pointer; touch-action: none;
     }
-    .sheet-toggle .grab { width: 42px; height: 4.5px; border-radius: 999px; background: rgba(146,163,200,.35); }
+    .sheet-toggle:focus { outline: none; }
+    .sheet-toggle:focus-visible { box-shadow: none; }
+    .sheet-toggle:focus-visible .grab { background: var(--accent); }
+    .sheet-toggle .grab { width: 38px; height: 4.5px; border-radius: 999px; background: #c7c7cc; }
     .sheet-toggle .st-row { display: flex; align-items: center; gap: 6px; color: var(--muted); white-space: nowrap; }
-    .sheet-toggle .st-row b { color: var(--text); font-family: var(--mono); font-size: 13.5px; }
+    .sheet-toggle .st-row b { color: var(--text); font-family: var(--body); font-size: 13.5px; font-variant-numeric: tabular-nums; }
     .sheet-toggle .chev { color: var(--faint); transition: transform .3s var(--ease); }
     body.sheet-collapsed .sheet-toggle .chev { transform: rotate(180deg); }
     .head { padding-top: 0; }
     .stats { grid-template-columns: repeat(4, 1fr); }
     .search input { font-size: 16px; }  /* ≥16px — iOS won't zoom the page on focus */
-    #mapbar { top: env(safe-area-inset-top, 0px); right: 10px; margin-top: 10px; }
-    #mapbar .seg button { padding: 7px 10px; font-size: 11.5px; }
-    .maplibregl-ctrl-bottom-left, .maplibregl-ctrl-bottom-right { bottom: var(--peek); }
-    .maplibregl-popup { max-width: 84vw !important; }
+    .map-popup { width: min(300px, 84vw); }
   }
 </style>
 </head>
 <body>
 
 <div id="map"></div>
-
-<!-- floating basemap switcher -->
-<div id="mapbar">
-  <div class="seg" id="styleSeg">
-    <button data-s="dark" class="on">Тёмная</button>
-    <button data-s="streets">Улицы</button>
-    <button data-s="sat">Спутник</button>
-  </div>
-</div>
+<div id="mapError" role="alert"></div>
 
 <aside id="panel">
   <button id="sheetToggle" class="sheet-toggle" aria-expanded="true">
     <span class="grab"></span>
-    <span class="st-row">📡 <b id="shAnt">—</b> антенн · <b id="shTwr">8</b> вышек <span class="chev">▾</span></span>
+    <span class="st-row"><b id="shAnt">—</b> антенн · <b id="shTwr">8</b> вышек <span class="chev">▾</span></span>
   </button>
 
   <header class="head">
@@ -348,15 +339,15 @@
         </svg>
       </div>
       <div>
-        <h1>Дилшод <em>·</em> Душанбе</h1>
-        <div class="sub">Реестр антенн ЧДММ «Дилшод» · 01.05.2024</div>
+        <h1>Tojikelectrocomplect <em>&amp;</em> Baylan</h1>
+        <div class="sub">Реестр антенн</div>
       </div>
       <button id="panelHide" class="navbtn" title="Скрыть панель">‹</button>
     </div>
     <div class="stats">
-      <div class="stat hot"><b id="stAnt">0</b><span>антенн</span></div>
-      <div class="stat"><b id="stAddr">0</b><span>адресов</span></div>
-      <div class="stat"><b id="stMah">0</b><span>махалл</span></div>
+      <div class="stat hot"><b id="stAnt">0</b><span>всего</span></div>
+      <div class="stat"><b id="stAssigned">0</b><span>с ID</span></div>
+      <div class="stat"><b id="stUnassigned">0</b><span>без ID</span></div>
       <div class="stat"><b>8</b><span>вышек</span></div>
     </div>
   </header>
@@ -372,6 +363,10 @@
         <label class="chip"><input type="checkbox" id="tgHubs" checked /><span>Вышки</span></label>
         <label class="chip"><input type="checkbox" id="tgRadius" /><span>Радиус 9 км</span></label>
       </div>
+    </div>
+    <div class="assignment-key" aria-label="Статус модулей">
+      <span><i></i>есть ID</span>
+      <span><i class="open"></i>нет ID</span>
     </div>
   </div>
 
@@ -391,7 +386,8 @@
 <button id="panelOpen">☰ Реестр</button>
 <div id="tip"></div>
 
-<script src="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.js"></script>
+<script src="https://mapgl.2gis.com/api/js/v1"></script>
+<script src="./assignment-data.js"></script>
 
 <script>
 /* ═════════════════ REAL REGISTRY DATA (baked from Excel) ═════════════════ */
@@ -400,6 +396,18 @@ const REGISTRY = [{"m": "махаллаи Бинихисорак", "h": "", "c":
 /* ═════════════════════════════════════════════════════════════════════════ */
 
 /* Большие антенны (вышки) — точные координаты; адреса подтянуты из OpenStreetMap */
+/* Confirmed source corrections: two embedded house numbers and four missing/zero counts. */
+const movedHouse1 = REGISTRY.find((r) => r.m === "махаллаи Зарафшон 1//7" && !r.h);
+if (movedHouse1) Object.assign(movedHouse1, { m: "махаллаи Зарафшон", h: "1//7", fi: 3 });
+const movedHouse2 = REGISTRY.find((r) => r.m === "махаллаи Зарафшон 22//8" && !r.h);
+if (movedHouse2) Object.assign(movedHouse2, { m: "махаллаи Зарафшон", h: "22//8", fi: 3 });
+REGISTRY.forEach((r) => { if (!(r.c > 0)) r.c = 1; });
+FAMILIES.forEach((f, i) => {
+  const rows = REGISTRY.filter((r) => r.fi === i);
+  f.rows = rows.length;
+  f.count = rows.reduce((sum, r) => sum + r.c, 0);
+});
+
 const HUBS = [
   { lat: 38.583123, lng: 68.732282, addr: "проспект Нусратулло Махсум", area: "Хуснообод · район Сино", name: "Gateway_FBE3AF", gatewayId: "24E124FFFEFBE3AE" },
   { lat: 38.580183, lng: 68.729155, addr: "ул. Нусратулло Максума, 105/5", area: "102-й микрорайон · район Сино", name: "Gateway_FBE25F", gatewayId: "24E124FFFEFBE25E" },
@@ -410,30 +418,24 @@ const HUBS = [
   { lat: 38.646505, lng: 68.769054, addr: "проспект Рудаки (север)", area: "район Исмоили Сомони", name: "Gateway_FBE36F", gatewayId: "24E124FFFEFBE36E" },
   { lat: 38.592637, lng: 68.755212, addr: "91-й микрорайон", area: "район Сино", name: "Gateway_FBE239", gatewayId: "24E124FFFEFBE238" },
 ];
+HUBS.forEach((hub, i) => {
+  hub.color = ASSIGNMENT_DATA.colors[i];
+  hub.capacity = ASSIGNMENT_DATA.gatewayModules[i].length;
+});
 const HUB_RADIUS_M = 9000;
 /* подпись вышки: точное имя из реестра uMap */
 const hubName = (h, i) => h.name || "№" + (i + 1);
 
-/* ── базовые стили карты (все бесплатные, без ключей) ── */
-const STYLES = {
-  dark:    "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
-  streets: "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json",
-  sat: {
-    version: 8,
-    sources: { esri: {
-      type: "raster", tileSize: 256, maxzoom: 19,
-      tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
-      attribution: "© Esri, Maxar, Earthstar Geographics",
-    } },
-    layers: [{ id: "esri", type: "raster", source: "esri" }],
-  },
-};
+/* 2GIS MapGL demo access. Restrict this browser key to the production domain
+   in Platform Manager before publishing. */
+const DGIS_API_KEY = "9102cd05-77c5-492c-a769-f488f3c6442b";
 
 /* ── state ── */
-let map, popup;
+let map, popup, antennaSource;
 let activeFam = null, activeTab = "mah", query = "";
 let showMarks = true, showHubs = true, showRadius = false;
-let mahMarkers = [], hubMarkers = [];
+let overlaysReady = false;
+let mahMarkers = [], hubMarkers = [], radiusCircles = [], antennaLayerIds = [];
 let antennaGeo = null;
 
 const $ = (id) => document.getElementById(id);
@@ -448,134 +450,200 @@ const isMobile = () => window.matchMedia("(max-width: 720px)").matches;
 function hashStr(s){ let h = 2166136261; for (let i = 0; i < s.length; i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
 function mulberry32(a){ return function(){ a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 
-/* ── 8 278 антенн из 450 адресных строк → GeoJSON ── */
+/* ── 8 282 register slots: 5 690 real IDs + 2 592 nearest-gateway classifications ── */
 function buildAntennas(){
   const feats = [];
+  const gatewayCursors = Array(HUBS.length).fill(0);
   const mLat = 111320, base = 111320 * Math.cos(38.57 * Math.PI / 180);
   for (let ri = 0; ri < REGISTRY.length; ri++){
     const r = REGISTRY[ri];
     const rng = mulberry32(hashStr(r.m + "|" + r.h + "|" + ri));
     const n = r.c | 0, spread = 55;
-    for (let k = 0; k < n; k++){
-      const rr = spread * Math.sqrt(rng()), aa = 2 * Math.PI * rng();
+    const addFeature = (gi, assigned, moduleId, placement = null) => {
+      const rr = placement ? 0 : spread * Math.sqrt(rng()), aa = placement ? 0 : 2 * Math.PI * rng();
+      const lat = placement ? placement.lat : r.lat + (rr * Math.sin(aa)) / mLat;
+      const lng = placement ? placement.lng : r.lng + (rr * Math.cos(aa)) / base;
       feats.push({
         type: "Feature",
-        geometry: { type: "Point", coordinates: [ r.lng + (rr * Math.cos(aa)) / base, r.lat + (rr * Math.sin(aa)) / mLat ] },
-        properties: { ri, fi: r.fi },
+        geometry: { type: "Point", coordinates: [lng, lat] },
+        properties: {
+          ri, fi: r.fi, gi, assigned: assigned ? 1 : 0, moduleId,
+          resolved: placement ? 1 : 0,
+          buildingId: placement?.b || "",
+          buildingHouse: placement?.h || "",
+          buildingStreet: placement?.s || "",
+          buildingType: placement?.t || "",
+        },
       });
+    };
+    const resolved = ASSIGNMENT_DATA.resolvedRows?.[ri];
+    if (resolved){
+      resolved.forEach((placement) => {
+        const assigned = placement.g >= 0;
+        const gi = assigned ? placement.g : placement.n;
+        const moduleId = assigned ? ASSIGNMENT_DATA.gatewayModules[gi][gatewayCursors[gi]++] : "";
+        addFeature(gi, assigned, moduleId, placement);
+      });
+      continue;
+    }
+    const plan = ASSIGNMENT_DATA.rowGatewayCounts[ri] || [];
+    let assignedAtAddress = 0;
+    for (let gi = 0; gi < HUBS.length; gi++){
+      const count = plan[gi] || 0;
+      assignedAtAddress += count;
+      for (let k = 0; k < count; k++){
+        addFeature(gi, true, ASSIGNMENT_DATA.gatewayModules[gi][gatewayCursors[gi]++]);
+      }
+    }
+    const nearestGi = ASSIGNMENT_DATA.rowNearestGateway[ri];
+    for (let k = assignedAtAddress; k < n; k++){
+      addFeature(nearestGi, false, "");
     }
   }
   antennaGeo = { type: "FeatureCollection", features: feats };
 }
 
-function circlePoly(lat, lng, rM, steps = 72){
-  const mLat = 111320, mLng = 111320 * Math.cos(lat * Math.PI / 180), ring = [];
-  for (let i = 0; i <= steps; i++){
-    const a = (i / steps) * 2 * Math.PI;
-    ring.push([lng + (rM * Math.cos(a)) / mLng, lat + (rM * Math.sin(a)) / mLat]);
-  }
-  return ring;
-}
-const hubZones = () => ({
-  type: "FeatureCollection",
-  features: HUBS.map((h, i) => ({ type: "Feature", properties: { i }, geometry: { type: "Polygon", coordinates: [circlePoly(h.lat, h.lng, HUB_RADIUS_M)] } })),
-});
+/* ── Gateway-colored dots through the 2GIS GeoJSON source ── */
+const svgDataUrl = (svg) => "data:image/svg+xml;base64," + btoa(svg);
+const dotIconUrl = (color, assigned) => svgDataUrl(
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">'
+  + '<circle cx="16" cy="16" r="13" fill="' + (assigned ? color : "#ffffff") + '" fill-opacity="' + (assigned ? ".92" : ".82") + '" stroke="' + (assigned ? "#ffffff" : color) + '" stroke-width="3"/>'
+  + '<circle cx="16" cy="16" r="14.5" fill="none" stroke="#111827" stroke-opacity=".38" stroke-width="1"/>'
+  + '</svg>'
+);
 
-/* ── цвета точек: махалла → свой цвет ── */
-function colorExpr(){
-  const e = ["match", ["get", "fi"]];
-  FAMILIES.forEach((f, i) => e.push(i, f.color));
-  e.push("#94a3b8");
-  return e;
+function addAntennaAssets(){
+  HUBS.forEach((hub, i) => {
+    const assignedName = "ant-dot-assigned-" + i;
+    const openName = "ant-dot-open-" + i;
+    if (!map.getIconUrl(assignedName)) map.addIcon(assignedName, { url: dotIconUrl(hub.color, true) });
+    if (!map.getIconUrl(openName)) map.addIcon(openName, { url: dotIconUrl(hub.color, false) });
+  });
 }
+
+function addAntennaLayers(){
+  antennaLayerIds.forEach((id) => { if (map.hasLayer(id)) map.removeLayer(id); });
+  antennaLayerIds = [];
+  HUBS.forEach((hub, gi) => {
+    [0, 1].forEach((assigned) => {
+      const id = "ant-dots-" + gi + "-" + assigned;
+      const filter = [
+        "all",
+        ["match", ["sourceAttr", "purpose"], ["antennas"], true, false],
+        ["==", ["get", "gi"], gi],
+        ["==", ["get", "assigned"], assigned],
+      ];
+      if (activeFam != null) filter.push(["==", ["get", "fi"], activeFam]);
+      antennaLayerIds.push(id);
+      map.addLayer({
+        id,
+        type: "point",
+        interactive: true,
+        filter,
+        style: {
+          iconImage: (assigned ? "ant-dot-assigned-" : "ant-dot-open-") + gi,
+          iconWidth: ["interpolate", ["exponential", 1.35], ["zoom"], 9, 1.5, 12, 3, 14, 5.5, 16, 11, 18.5, 20],
+          opacity: assigned ? 0.88 : 0.48,
+          allowOverlap: true,
+        },
+      });
+    });
+  });
+}
+
 function applyIsolation(){
-  if (!map.getLayer("ant-dots")) return;
-  if (activeFam == null){
-    map.setPaintProperty("ant-dots", "circle-color", colorExpr());
-    map.setPaintProperty("ant-dots", "circle-opacity", 0.8);
-  } else {
-    map.setPaintProperty("ant-dots", "circle-color",
-      ["case", ["==", ["get", "fi"], activeFam], FAMILIES[activeFam].color, "#5b667f"]);
-    map.setPaintProperty("ant-dots", "circle-opacity",
-      ["case", ["==", ["get", "fi"], activeFam], 0.92, 0.05]);
-  }
+  if (overlaysReady) addAntennaLayers();
 }
 
-/* ── добавление слоёв (вызывается заново при смене стиля) ── */
-function addOverlays(){
-  if (map.getSource("antennas")) return;
-
-  map.addSource("antennas", { type: "geojson", data: antennaGeo });
-  map.addSource("hubzones", { type: "geojson", data: hubZones() });
-
-  map.addLayer({
-    id: "hub-fill", type: "fill", source: "hubzones",
-    paint: { "fill-color": "#ff3d5a", "fill-opacity": 0.02 },   /* 8 circles overlap city-wide — keep the tint faint */
-    layout: { visibility: showRadius ? "visible" : "none" },
+function buildRadiusCircles(){
+  radiusCircles.forEach((circle) => circle.destroy());
+  radiusCircles = [];
+  if (!showHubs || !showRadius || !map) return;
+  HUBS.forEach((h) => {
+    radiusCircles.push(new mapgl.Circle(map, {
+      coordinates: [h.lng, h.lat],
+      radius: HUB_RADIUS_M,
+      color: "#ff3d5a0a",
+      strokeColor: "#ff3d5a88",
+      strokeWidth: 1.4,
+      interactive: false,
+      zIndex: 1,
+    }));
   });
-  map.addLayer({
-    id: "hub-line", type: "line", source: "hubzones",
-    paint: { "line-color": "#ff3d5a", "line-opacity": 0.5, "line-width": 1.4, "line-dasharray": [3, 3] },
-    layout: { visibility: showRadius ? "visible" : "none" },
-  });
-
-  map.addLayer({
-    id: "ant-dots", type: "circle", source: "antennas",
-    paint: {
-      "circle-color": colorExpr(),
-      "circle-opacity": 0.8,
-      "circle-radius": ["interpolate", ["exponential", 1.4], ["zoom"], 9, 0.4, 12, 1.1, 14, 2.6, 16, 6, 18.5, 13],
-      "circle-stroke-width": ["interpolate", ["linear"], ["zoom"], 14.5, 0, 16, 1],
-      "circle-stroke-color": "rgba(6,9,15,.6)",
-    },
-  });
-
-  applyIsolation();
 }
 
 /* ── HTML-маркеры ── */
 const TWR_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><circle cx="12" cy="10" r="1.5" fill="currentColor" stroke="none"/><path d="M8.9 13.1a4.4 4.4 0 0 1 0-6.2M15.1 6.9a4.4 4.4 0 0 1 0 6.2"/><path d="M6.3 15.7a8 8 0 0 1 0-11.4M17.7 4.3a8 8 0 0 1 0 11.4"/><path d="M12 12v9"/></svg>';
 
 function buildMahMarkers(){
-  mahMarkers.forEach((m) => m.remove()); mahMarkers = [];
+  mahMarkers.forEach((m) => m.destroy()); mahMarkers = [];
   if (!showMarks) return;
   FAMILIES.forEach((f, i) => {
     const el = document.createElement("div");
     el.className = "mhl";
     const dot = document.createElement("span");
-    dot.className = "mdot"; dot.style.background = f.color;
+    dot.className = "mdot"; dot.style.background = "#8e8e93";
     el.appendChild(dot);
     el.title = f.label + " — " + fmt(f.count) + " " + plural(f.count, ["антенна","антенны","антенн"]);
     el.addEventListener("click", (e) => { e.stopPropagation(); selectFam(i, true); });
-    mahMarkers.push(new maplibregl.Marker({ element: el }).setLngLat([f.lng, f.lat]).addTo(map));
+    mahMarkers.push(new mapgl.HtmlMarker(map, {
+      coordinates: [f.lng, f.lat], html: el, anchor: [7.5, 7.5], zIndex: 5,
+    }));
   });
 }
 function buildHubMarkers(){
-  hubMarkers.forEach((m) => m.remove()); hubMarkers = [];
+  hubMarkers.forEach((m) => m.destroy()); hubMarkers = [];
   if (!showHubs) return;
   HUBS.forEach((h, i) => {
     const el = document.createElement("div");
     el.className = "hub";
     el.innerHTML = '<span class="ring"></span><span class="ring ring2"></span><div class="core">' + TWR_SVG + '</div><span class="num">' + (i + 1) + "</span>";
+    el.querySelector(".core").style.background = h.color;
+    el.querySelector(".num").style.background = h.color;
     el.title = "Вышка " + hubName(h, i) + " — " + h.addr;
     el.addEventListener("click", (e) => { e.stopPropagation(); openHub(i, false); });
-    hubMarkers.push(new maplibregl.Marker({ element: el }).setLngLat([h.lng, h.lat]).addTo(map));
+    hubMarkers.push(new mapgl.HtmlMarker(map, {
+      coordinates: [h.lng, h.lat], html: el, anchor: [23, 23], zIndex: 10,
+    }));
   });
 }
 
 /* ── попапы ── */
+function closePopup(){
+  if (!popup) return;
+  popup.destroy();
+  popup = null;
+}
 function showPopup(lngLat, html){
-  if (popup) popup.remove();
-  popup = new maplibregl.Popup({ offset: 16, maxWidth: "300px" }).setLngLat(lngLat).setHTML(html).addTo(map);
+  closePopup();
+  const el = document.createElement("div");
+  el.className = "map-popup";
+  el.innerHTML = '<button class="popup-close" type="button" aria-label="Закрыть">×</button>' + html;
+  el.querySelector(".popup-close").addEventListener("click", (e) => { e.stopPropagation(); closePopup(); });
+  popup = new mapgl.HtmlMarker(map, {
+    coordinates: lngLat, html: el, anchor: [0, 0], zIndex: 40,
+  });
 }
 const gLink = (lat, lng) => 'https://www.google.com/maps/search/?api=1&query=' + lat + ',' + lng;
 const yLink = (lat, lng) => 'https://yandex.ru/maps/?ll=' + lng + ',' + lat + '&z=17&pt=' + lng + ',' + lat;
+function distanceKm(a, b){
+  const rad = (v) => v * Math.PI / 180, R = 6371;
+  const dLat = rad(b.lat - a.lat), dLng = rad(b.lng - a.lng);
+  const x = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
+}
+
+function focusMap(coordinates, minZoom){
+  const animation = { duration: 750, easing: "easeOutCubic" };
+  map.setCenter(coordinates, animation);
+  if (map.getStyleZoom() < minZoom) map.setStyleZoom(minZoom, animation);
+}
 
 function openHub(i, fly){
   const h = HUBS[i];
   if (fly){
     if (isMobile()) setSheet(true);
-    map.flyTo({ center: [h.lng, h.lat], zoom: Math.max(map.getZoom(), 15), speed: 1.6, essential: true });
+    focusMap([h.lng, h.lat], 15);
   }
   showPopup([h.lng, h.lat],
     '<div class="pp">'
@@ -584,6 +652,7 @@ function openHub(i, fly){
     + '<div class="pp-sub">' + esc(h.area) + '</div>'
     + '<div class="pp-rows">'
     +   '<div class="pp-row"><span>Gateway ID</span><b>' + esc(h.gatewayId) + '</b></div>'
+    +   '<div class="pp-row"><span>Доступных Module ID</span><b style="color:' + h.color + '">' + fmt(h.capacity) + '</b></div>'
     +   '<div class="pp-row"><span>Радиус покрытия</span><b class="hot">9 км</b></div>'
     +   '<div class="pp-row"><span>Координаты</span><b>' + h.lat.toFixed(6) + ', ' + h.lng.toFixed(6) + '</b></div>'
     + '</div>'
@@ -591,18 +660,31 @@ function openHub(i, fly){
     + '<a href="' + yLink(h.lat, h.lng) + '" target="_blank" rel="noopener">Яндекс ↗</a></div>'
     + '</div>');
 }
-function openAddress(r, lngLat){
+function openModule(r, properties, lngLat){
+  const gi = Number(properties.gi);
+  const assigned = Number(properties.assigned) === 1;
+  const resolved = Number(properties.resolved) === 1;
+  const hub = HUBS[gi];
+  const point = { lat: Number(lngLat[1]), lng: Number(lngLat[0]) };
+  const buildingAddress = [properties.buildingStreet, properties.buildingHouse].filter(Boolean).join(", ");
+  const locationLine = resolved
+    ? (buildingAddress || "здание без публичного номера")
+    : r.h;
   showPopup(lngLat,
     '<div class="pp">'
-    + '<div class="pp-k">Адрес · махалла</div>'
+    + '<div class="pp-k" style="color:' + hub.color + '">' + (assigned ? 'Module ID назначен' : 'Без Module ID') + '</div>'
     + '<div class="pp-t">' + esc(cleanM(r.m)) + '</div>'
-    + (r.h ? '<div class="pp-sub">хона / кӯча: <b style="color:var(--text)">' + esc(r.h) + '</b></div>' : '')
+    + (locationLine ? '<div class="pp-sub">хона / кӯча: <b style="color:var(--text)">' + esc(locationLine) + '</b></div>' : '')
     + '<div class="pp-rows">'
-    +   '<div class="pp-row"><span>Антенн по адресу</span><b class="hot">' + fmt(r.c) + '</b></div>'
-    +   '<div class="pp-row"><span>Координаты</span><b>' + r.lat.toFixed(5) + ', ' + r.lng.toFixed(5) + '</b></div>'
+    +   '<div class="pp-row"><span>Module ID</span><b>' + (assigned ? esc(properties.moduleId) : '—') + '</b></div>'
+    +   '<div class="pp-row"><span>Вышка</span><b style="color:' + hub.color + '">' + esc(hubName(hub, gi)) + '</b></div>'
+    +   '<div class="pp-row"><span>Gateway ID</span><b>' + esc(hub.gatewayId) + '</b></div>'
+    +   '<div class="pp-row"><span>Расстояние</span><b>' + distanceKm(point, hub).toFixed(2) + ' км</b></div>'
+    +   (resolved ? '<div class="pp-row"><span>Здание</span><b>' + esc(properties.buildingId) + '</b></div>' : '')
     + '</div>'
-    + (r.ap ? '<div class="pp-apx">≈ примерное расположение (уровень махалли)</div>' : '')
-    + '<div class="pp-actions"><a href="' + gLink(r.lat, r.lng) + '" target="_blank" rel="noopener">Google Maps ↗</a></div>'
+    + (!assigned ? '<div class="pp-apx">Ближайшая вышка определена, но свободного Module ID нет.</div>' : '')
+    + (resolved ? '<div class="pp-apx">Выбран отдельный жилой дом-кандидат из каталога 2GIS; требуется полевая проверка.</div>' : r.ap ? '<div class="pp-apx">≈ примерное расположение (уровень махалли)</div>' : '')
+    + '<div class="pp-actions"><a href="' + gLink(point.lat, point.lng) + '" target="_blank" rel="noopener">Google Maps ↗</a></div>'
     + '</div>');
 }
 function openFam(i){
@@ -625,12 +707,12 @@ function selectFam(i, toggle){
   if (activeFam != null){
     if (isMobile()) setSheet(true);
     const f = FAMILIES[i];
-    map.flyTo({ center: [f.lng, f.lat], zoom: Math.max(map.getZoom(), 14.2), speed: 1.5, essential: true });
+    focusMap([f.lng, f.lat], 14.2);
     openFam(i);
-  } else if (popup) popup.remove();
+  } else closePopup();
   applyIsolation(); renderList();
 }
-function resetFam(){ activeFam = null; if (popup) popup.remove(); applyIsolation(); renderList(); fitAll(); }
+function resetFam(){ activeFam = null; closePopup(); applyIsolation(); renderList(); fitAll(); }
 
 /* ── список в панели ── */
 function renderList(){
@@ -646,7 +728,7 @@ function renderList(){
       el.className = "item" + (activeFam === i ? " active" : "");
       el.style.animationDelay = Math.min(shown * 22, 380) + "ms";
       el.innerHTML =
-        '<div class="swatch" style="background:' + f.color + ';color:' + f.color + '"></div>'
+        '<div class="swatch" style="background:#8e8e93;color:#8e8e93"></div>'
         + '<div class="body"><div class="name">' + esc(f.label) + (f.approx ? ' <span class="apx" title="примерное расположение">≈</span>' : '') + '</div>'
         + '<div class="meta">' + f.rows + ' ' + plural(f.rows, ["адрес","адреса","адресов"]) + '</div></div>'
         + '<div class="cnt">' + fmt(f.count) + '<small>антенн</small></div>';
@@ -661,11 +743,11 @@ function renderList(){
       el.className = "item";
       el.style.animationDelay = Math.min(shown * 22, 380) + "ms";
       el.innerHTML =
-        '<div class="twr-ico">' + (i + 1) + '</div>'
+        '<div class="twr-ico" style="background:' + h.color + ';border-color:' + h.color + ';color:#fff">' + (i + 1) + '</div>'
         + '<div class="body"><div class="name"><span class="code">' + esc(hubName(h, i)) + '</span></div>'
         + '<div class="meta">' + esc(h.gatewayId) + '</div>'
         + '<div class="meta">' + esc(h.addr) + ' · ' + esc(h.area) + '</div></div>'
-        + '<div class="cnt" style="font-size:11px;color:var(--muted)">' + h.lat.toFixed(3) + '<small style="text-transform:none;letter-spacing:0">' + h.lng.toFixed(3) + '</small></div>';
+        + '<div class="cnt" style="color:' + h.color + '">' + fmt(h.capacity) + '<small>Module ID</small></div>';
       el.onclick = () => openHub(i, true);
       $list.appendChild(el); shown++;
     });
@@ -675,108 +757,147 @@ function renderList(){
 }
 
 function fitAll(){
-  const b = new maplibregl.LngLatBounds();
-  REGISTRY.forEach((r) => b.extend([r.lng, r.lat]));
-  HUBS.forEach((h) => b.extend([h.lng, h.lat]));
-  map.fitBounds(b, { padding: fitPad(), maxZoom: 14.5, duration: 1100 });
+  map.fitBounds(bounds0, {
+    padding: fitPad(),
+    maxZoom: 14.5,
+    animation: { duration: 900, easing: "easeOutCubic" },
+  });
 }
 const fitPad = () => isMobile()
   ? { top: 80, right: 34, bottom: 110, left: 34 }
   : { top: 60, right: 80, bottom: 60, left: document.body.classList.contains("panel-hidden") ? 80 : 420 };
 
+function updateControlPadding(){
+  if (!map) return;
+  const bottom = isMobile()
+    ? (document.body.classList.contains("sheet-collapsed") ? 78 : Math.round(Math.min(window.innerHeight * 0.74, 560)) + 10)
+    : 14;
+  map.setControlsLayoutPadding({ top: 14, right: 14, bottom, left: 14 });
+}
+
+function showMapError(message){
+  const el = $("mapError");
+  el.textContent = message;
+  el.classList.add("show");
+}
+
 /* ── шапка/статистика ── */
 (function initStats(){
   const totalAnt = FAMILIES.reduce((s, f) => s + f.count, 0);
   $("stAnt").textContent = fmt(totalAnt);
-  $("stAddr").textContent = fmt(REGISTRY.length);
-  $("stMah").textContent = FAMILIES.length;
+  $("stAssigned").textContent = fmt(ASSIGNMENT_DATA.totals.assigned);
+  $("stUnassigned").textContent = fmt(ASSIGNMENT_DATA.totals.unassigned);
   $("nMah").textContent = FAMILIES.length;
   $("shAnt").textContent = fmt(totalAnt);
 })();
 
 /* ── карта ── */
 buildAntennas();
-const bounds0 = (() => { const b = new maplibregl.LngLatBounds(); REGISTRY.forEach((r) => b.extend([r.lng, r.lat])); HUBS.forEach((h) => b.extend([h.lng, h.lat])); return b; })();
-
-map = new maplibregl.Map({
-  container: "map",
-  style: STYLES.dark,
-  bounds: bounds0,
-  fitBoundsOptions: { padding: fitPad(), maxZoom: 14.5 },
-  minZoom: 8.5, maxZoom: 19.5,
-  attributionControl: { compact: true },
-});
-map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "bottom-right");
-map.addControl(new maplibregl.ScaleControl({ maxWidth: 90 }), "bottom-left");
-map.addControl(new maplibregl.GeolocateControl({ positionOptions: { enableHighAccuracy: true }, trackUserLocation: true }), "bottom-right");
-
-/* re-attach data layers whenever a (new) style finishes loading — addOverlays is
-   idempotent, and setStyle() wipes all custom sources/layers */
-function ensureOverlays(){
-  if (map.getSource("antennas") || !map.isStyleLoaded()) return;
-  try { addOverlays(); } catch (e) { /* style mid-swap — retried on next event */ }
-}
-map.on("style.load", ensureOverlays);
-map.on("styledata", ensureOverlays);
-map.on("idle", ensureOverlays);
-map.on("load", () => { buildMahMarkers(); buildHubMarkers(); });
-
-/* Some embedded webviews report a 0×0 container at boot, leaving the canvas at
-   MapLibre's 400×300 fallback. Timers can be throttled there too, so correct the
-   size from several signals (ResizeObserver, the map's own render loop, resize)
-   and keep trying until the canvas truly matches the container. */
-(function bootSize(){
-  let settled = false;
-  const fix = () => {
-    if (settled) return;
-    const el = document.getElementById("map"), cv = map.getCanvas();
-    const want = el.clientWidth, have = parseInt(cv.style.width, 10) || 0;
-    if (!want) return;
-    if (Math.abs(want - have) > 2){
-      map.resize();
-      map.fitBounds(bounds0, { padding: fitPad(), maxZoom: 14.5, duration: 0 });
-    } else if (have > 401) settled = true;   // real layout applied — stop checking
-  };
-  new ResizeObserver(fix).observe(document.getElementById("map"));
-  map.on("render", fix);
-  window.addEventListener("resize", fix);
-  document.addEventListener("visibilitychange", fix);
+const bounds0 = (() => {
+  let west = Infinity, south = Infinity, east = -Infinity, north = -Infinity;
+  [...REGISTRY, ...HUBS].forEach((p) => {
+    west = Math.min(west, p.lng); south = Math.min(south, p.lat);
+    east = Math.max(east, p.lng); north = Math.max(north, p.lat);
+  });
+  return { southWest: [west, south], northEast: [east, north] };
 })();
 
+try {
+  map = new mapgl.Map("map", {
+    key: DGIS_API_KEY,
+    center: [68.75, 38.575],
+    styleZoom: 11.5,
+    minZoom: 8.5,
+    maxZoom: 19.5,
+    lang: "ru",
+    pitch: 0,
+    rotation: 0,
+    zoomControl: "bottomRight",
+    trafficControl: "topRight",
+    scaleControl: "bottomRight",
+    copyright: "bottomRight",
+  });
+
+  antennaSource = new mapgl.GeoJsonSource(map, {
+    data: antennaGeo,
+    attributes: { purpose: "antennas" },
+  });
+
+  let initialFitDone = false;
+  map.on("styleload", () => {
+    try {
+      overlaysReady = true;
+      addAntennaAssets();
+      addAntennaLayers();
+      buildMahMarkers();
+      buildHubMarkers();
+      buildRadiusCircles();
+      updateControlPadding();
+      $("mapError").classList.remove("show");
+      if (!initialFitDone){ initialFitDone = true; fitAll(); }
+    } catch (error) {
+      console.error(error);
+      showMapError("2GIS загрузился, но слой антенн не удалось отобразить. Обновите страницу.");
+    }
+  });
+  map.on("styleloaderror", () => {
+    showMapError("Карта 2GIS не загрузилась. Проверьте срок действия и ограничения домена API-ключа.");
+  });
+
+  const resizeMap = () => { map.invalidateSize(); updateControlPadding(); };
+  new ResizeObserver(resizeMap).observe($("map"));
+  window.addEventListener("resize", resizeMap);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) resizeMap(); });
+} catch (error) {
+  console.error(error);
+  showMapError("Не удалось запустить карту 2GIS. Проверьте подключение к интернету и API-ключ.");
+}
+
 /* клики и ховер по точкам-антеннам */
-map.on("click", "ant-dots", (e) => {
-  const f = e.features[0];
-  openAddress(REGISTRY[f.properties.ri], e.lngLat);
-});
-map.on("mouseenter", "ant-dots", () => { map.getCanvas().style.cursor = "pointer"; });
-map.on("mouseleave", "ant-dots", () => { map.getCanvas().style.cursor = ""; $tip.style.display = "none"; });
-map.on("mousemove", "ant-dots", (e) => {
-  if (isMobile() || !e.features.length) return;
-  const r = REGISTRY[e.features[0].properties.ri];
-  $tip.style.display = "block";
-  $tip.style.left = (e.originalEvent.clientX + 14) + "px";
-  $tip.style.top = (e.originalEvent.clientY + 14) + "px";
-  $tip.innerHTML = esc(cleanM(r.m)) + (r.h ? ", " + esc(r.h) : "") + " · <b>" + fmt(r.c) + "</b>";
-});
+if (map){
+  map.on("click", (e) => {
+    const data = e.targetData;
+    if (data && data.type === "geojson" && data.source === antennaSource && data.feature){
+      const properties = data.feature.properties;
+      const r = REGISTRY[Number(properties.ri)];
+      if (r) openModule(r, properties, e.lngLat);
+    } else {
+      closePopup();
+    }
+  });
+  map.on("mousemove", (e) => {
+    if (isMobile()) return;
+    const data = e.targetData;
+    const isAntenna = data && data.type === "geojson" && data.source === antennaSource && data.feature;
+    map.getCanvas().style.cursor = isAntenna ? "pointer" : "";
+    if (!isAntenna){ $tip.style.display = "none"; return; }
+    const properties = data.feature.properties;
+    const r = REGISTRY[Number(properties.ri)];
+    if (!r) return;
+    const gi = Number(properties.gi), assigned = Number(properties.assigned) === 1;
+    const resolved = Number(properties.resolved) === 1;
+    const location = resolved
+      ? ([properties.buildingStreet, properties.buildingHouse].filter(Boolean).join(", ") || properties.buildingId)
+      : r.h;
+    $tip.style.display = "block";
+    $tip.style.left = (e.originalEvent.clientX + 14) + "px";
+    $tip.style.top = (e.originalEvent.clientY + 14) + "px";
+    $tip.innerHTML = '<span style="color:' + HUBS[gi].color + '">●</span> ' + esc(cleanM(r.m))
+      + (location ? ", " + esc(location) : "") + " · <b>" + (assigned ? esc(properties.moduleId) : "без ID") + "</b>";
+  });
+}
 
 /* ── UI ── */
 $("search").addEventListener("input", (e) => { query = e.target.value; renderList(); });
 
-document.querySelectorAll("#styleSeg button").forEach((b) => b.onclick = () => {
-  document.querySelectorAll("#styleSeg button").forEach((x) => x.classList.toggle("on", x === b));
-  document.body.classList.toggle("lightmap", b.dataset.s === "streets");
-  map.setStyle(STYLES[b.dataset.s]);   // style.load re-adds the overlays
-});
 $("tgMarks").onchange = (e) => { showMarks = e.target.checked; buildMahMarkers(); };
 $("tgHubs").onchange = (e) => {
   showHubs = e.target.checked; buildHubMarkers();
-  const v = (showHubs && showRadius) ? "visible" : "none";
-  if (map.getLayer("hub-fill")){ map.setLayoutProperty("hub-fill", "visibility", v); map.setLayoutProperty("hub-line", "visibility", v); }
+  buildRadiusCircles();
 };
 $("tgRadius").onchange = (e) => {
   showRadius = e.target.checked;
-  const v = (showHubs && showRadius) ? "visible" : "none";
-  if (map.getLayer("hub-fill")){ map.setLayoutProperty("hub-fill", "visibility", v); map.setLayoutProperty("hub-line", "visibility", v); }
+  buildRadiusCircles();
 };
 document.querySelectorAll(".tab").forEach((t) => t.onclick = () => {
   activeTab = t.dataset.t;
@@ -788,20 +909,40 @@ $("fit").onclick = () => { if (isMobile()) setSheet(true); if (activeFam != null
 document.addEventListener("keydown", (e) => { if (e.key === "Escape" && activeFam != null) resetFam(); });
 
 $("exportCsv").onclick = () => {
-  const rows = [["mahalla","house","antennas","lat","lng","approx"]];
-  REGISTRY.forEach((r) => rows.push([r.m, r.h, r.c, r.lat, r.lng, r.ap ? "approx" : "geocoded"]));
+  const rows = [["module_id","status","gateway","gateway_id","mahalla","house","street","lat","lng","distance_km","location_quality","building_reference","building_type"]];
+  antennaGeo.features.forEach((feature) => {
+    const p = feature.properties, r = REGISTRY[Number(p.ri)], h = HUBS[Number(p.gi)];
+    const point = { lat: feature.geometry.coordinates[1], lng: feature.geometry.coordinates[0] };
+    const resolved = Number(p.resolved) === 1;
+    rows.push([
+      p.moduleId || "",
+      Number(p.assigned) === 1 ? "assigned" : "no_id_available",
+      hubName(h, Number(p.gi)),
+      h.gatewayId,
+      r.m,
+      p.buildingHouse || r.h,
+      p.buildingStreet || "",
+      point.lat,
+      point.lng,
+      distanceKm(point, h).toFixed(3),
+      resolved ? "selected_2gis_residential_building" : r.ap ? "estimated_mahalla" : "mapped_address",
+      p.buildingId || "",
+      p.buildingType || "",
+    ]);
+  });
   const csv = rows.map((row) => row.map((c) => '"' + String(c).replace(/"/g, '""') + '"').join(",")).join("\n");
   const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" });
-  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "dilshod-registry.csv"; a.click();
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "tojikelectrocomplect-baylan-module-assignment.csv"; a.click();
 };
 
 /* ── панель: сворачивание (desktop) + bottom sheet (mobile) ── */
-$("panelHide").onclick = () => document.body.classList.add("panel-hidden");
-$("panelOpen").onclick = () => document.body.classList.remove("panel-hidden");
+$("panelHide").onclick = () => { document.body.classList.add("panel-hidden"); updateControlPadding(); };
+$("panelOpen").onclick = () => { document.body.classList.remove("panel-hidden"); updateControlPadding(); };
 
 function setSheet(collapsed){
   document.body.classList.toggle("sheet-collapsed", collapsed);
   $("sheetToggle").setAttribute("aria-expanded", String(!collapsed));
+  requestAnimationFrame(updateControlPadding);
 }
 $("sheetToggle").addEventListener("click", () => setSheet(!document.body.classList.contains("sheet-collapsed")));
 (function(){
