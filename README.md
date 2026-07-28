@@ -13,6 +13,7 @@ Static files with **no build step**.
   to see its real street address, coordinates, 9 km coverage radius, and links to
   Google Maps / Yandex Maps
 - Click any module dot to see its Module ID status, gateway, address, and distance
+- Filter module dots instantly by **All**, **With ID**, or **Without ID**
 - Searchable mahalla list — click to isolate a neighborhood (everything else dims)
 - Detailed **2GIS** vector map with buildings, streets, places, and traffic control
 - Optional 9 km coverage-circle overlay · Export the module assignment to **CSV**

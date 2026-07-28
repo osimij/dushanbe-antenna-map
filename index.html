@@ -107,12 +107,15 @@
   .search svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; color: var(--faint); }
 
   .row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-  .seg { display: flex; background: var(--raise); border: 0; border-radius: 10px; padding: 2px; }
+  .seg { display: flex; width: 100%; background: var(--raise); border: 0; border-radius: 10px; padding: 2px; }
   .seg button {
-    border: 0; background: transparent; color: var(--muted); font: 600 12px var(--body);
-    padding: 6px 12px; border-radius: 8px; cursor: pointer; transition: background .18s, color .18s;
+    flex: 1; border: 0; background: transparent; color: var(--muted); font: 600 12px var(--body);
+    padding: 7px 10px; border-radius: 8px; cursor: pointer;
+    transition: transform .14s ease-out, background-color .16s ease, color .16s ease, box-shadow .16s ease;
   }
   .seg button.on { background: #fff; color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.10); }
+  .seg button:active { transform: scale(.97); }
+  .seg button:focus-visible { outline: 3px solid rgba(0,122,255,.22); outline-offset: 1px; }
   .chips { display: flex; gap: 6px; flex-wrap: wrap; }
   .chip { position: relative; cursor: pointer; }
   .chip input { position: absolute; opacity: 0; pointer-events: none; }
@@ -369,6 +372,11 @@
         <label class="chip"><input type="checkbox" id="tgRadius" /><span>Радиус 9 км</span></label>
       </div>
     </div>
+    <div class="seg" role="group" aria-label="Фильтр модулей по наличию ID">
+      <button type="button" class="on" data-id-status="all" aria-pressed="true">Все</button>
+      <button type="button" data-id-status="1" aria-pressed="false">С ID</button>
+      <button type="button" data-id-status="0" aria-pressed="false">Без ID</button>
+    </div>
     <div class="assignment-key" aria-label="Статус модулей">
       <span><i></i>есть ID</span>
       <span><i class="open"></i>нет ID</span>
@@ -437,7 +445,7 @@ const DGIS_API_KEY = "9102cd05-77c5-492c-a769-f488f3c6442b";
 
 /* ── state ── */
 let map, popup, antennaSource;
-let activeFam = null, activeTab = "mah", query = "";
+let activeFam = null, activeTab = "mah", moduleStatus = "all", query = "";
 let showMarks = true, showHubs = true, showRadius = false;
 let overlaysReady = false;
 let mahMarkers = [], hubMarkers = [], radiusCircles = [], antennaLayerIds = [];
@@ -533,6 +541,7 @@ function addAntennaLayers(){
   antennaLayerIds = [];
   HUBS.forEach((hub, gi) => {
     [0, 1].forEach((assigned) => {
+      if (moduleStatus !== "all" && Number(moduleStatus) !== assigned) return;
       const id = "ant-dots-" + gi + "-" + assigned;
       const filter = [
         "all",
@@ -910,6 +919,19 @@ $("tgRadius").onchange = (e) => {
   showRadius = e.target.checked;
   buildRadiusCircles();
 };
+document.querySelectorAll("[data-id-status]").forEach((button) => {
+  button.onclick = () => {
+    moduleStatus = button.dataset.idStatus;
+    document.querySelectorAll("[data-id-status]").forEach((item) => {
+      const selected = item === button;
+      item.classList.toggle("on", selected);
+      item.setAttribute("aria-pressed", String(selected));
+    });
+    closePopup();
+    $tip.style.display = "none";
+    applyIsolation();
+  };
+});
 document.querySelectorAll(".tab").forEach((t) => t.onclick = () => {
   activeTab = t.dataset.t;
   document.querySelectorAll(".tab").forEach((x) => x.classList.toggle("on", x === t));
