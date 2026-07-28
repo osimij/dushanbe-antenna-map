@@ -163,6 +163,11 @@
   .item .cnt { font: 700 13px var(--mono); color: var(--text); }
   .item .cnt small { display: block; font: 500 8.5px var(--body); color: var(--faint); text-transform: uppercase; letter-spacing: .07em; text-align: right; }
   .apx { color: var(--accent-2); font-weight: 700; }
+  .item .name .code {
+    display: inline-block; margin-right: 6px; padding: 1px 5px; border-radius: 5px;
+    background: rgba(255, 61, 90, .13); border: 1px solid rgba(255, 61, 90, .35);
+    color: var(--tower); font: 700 10.5px var(--mono); letter-spacing: .04em; vertical-align: 1px;
+  }
   .twr-ico {
     flex: 0 0 auto; width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center;
     background: rgba(255, 61, 90, .13); border: 1px solid rgba(255, 61, 90, .35); color: var(--tower);
@@ -396,16 +401,18 @@ const REGISTRY = [{"m": "махаллаи Бинихисорак", "h": "", "c":
 
 /* Большие антенны (вышки) — точные координаты; адреса подтянуты из OpenStreetMap */
 const HUBS = [
-  { lat: 38.583123, lng: 68.732282, addr: "проспект Нусратулло Махсум", area: "Хуснообод · район Сино" },
-  { lat: 38.580183, lng: 68.729155, addr: "ул. Нусратулло Максума, 105/5", area: "102-й микрорайон · район Сино" },
-  { lat: 38.561839, lng: 68.754215, addr: "проспект Саади Шерози, 37/4", area: "14-й микрорайон · район Сино" },
-  { lat: 38.562181, lng: 68.755813, addr: "проспект Абуали Сино, 128/1", area: "12-й микрорайон · район Сино" },
-  { lat: 38.513274, lng: 68.701453, addr: "юго-западная окраина", area: "район Сино" },
-  { lat: 38.633917, lng: 68.769574, addr: "ул. Худжамбиёи Боло · Кушониён", area: "район Исмоили Сомони" },
-  { lat: 38.646505, lng: 68.769054, addr: "проспект Рудаки (север)", area: "район Исмоили Сомони" },
-  { lat: 38.592637, lng: 68.755212, addr: "91-й микрорайон", area: "район Сино" },
+  { lat: 38.583123, lng: 68.732282, addr: "проспект Нусратулло Махсум", area: "Хуснообод · район Сино", name: "Gateway_FBE3AF", gatewayId: "24E124FFFEFBE3AE" },
+  { lat: 38.580183, lng: 68.729155, addr: "ул. Нусратулло Максума, 105/5", area: "102-й микрорайон · район Сино", name: "Gateway_FBE25F", gatewayId: "24E124FFFEFBE25E" },
+  { lat: 38.561839, lng: 68.754215, addr: "проспект Саади Шерози, 37/4", area: "14-й микрорайон · район Сино", name: "Gateway_FBE43D", gatewayId: "24E124FFFEFBE43C" },
+  { lat: 38.562181, lng: 68.755813, addr: "проспект Абуали Сино, 128/1", area: "12-й микрорайон · район Сино", name: "Gateway_FBE409", gatewayId: "24E124FFFEFBE408" },
+  { lat: 38.513274, lng: 68.701453, addr: "юго-западная окраина", area: "район Сино", name: "Gateway_FBE361", gatewayId: "24E124FFFEFBE360" },
+  { lat: 38.633917, lng: 68.769574, addr: "ул. Худжамбиёи Боло · Кушониён", area: "район Исмоили Сомони", name: "Gateway_FBE237", gatewayId: "24E124FFFEFBE236" },
+  { lat: 38.646505, lng: 68.769054, addr: "проспект Рудаки (север)", area: "район Исмоили Сомони", name: "Gateway_FBE36F", gatewayId: "24E124FFFEFBE36E" },
+  { lat: 38.592637, lng: 68.755212, addr: "91-й микрорайон", area: "район Сино", name: "Gateway_FBE239", gatewayId: "24E124FFFEFBE238" },
 ];
 const HUB_RADIUS_M = 9000;
+/* подпись вышки: точное имя из реестра uMap */
+const hubName = (h, i) => h.name || "№" + (i + 1);
 
 /* ── базовые стили карты (все бесплатные, без ключей) ── */
 const STYLES = {
@@ -550,7 +557,7 @@ function buildHubMarkers(){
     const el = document.createElement("div");
     el.className = "hub";
     el.innerHTML = '<span class="ring"></span><span class="ring ring2"></span><div class="core">' + TWR_SVG + '</div><span class="num">' + (i + 1) + "</span>";
-    el.title = "Вышка №" + (i + 1) + " — " + h.addr;
+    el.title = "Вышка " + hubName(h, i) + " — " + h.addr;
     el.addEventListener("click", (e) => { e.stopPropagation(); openHub(i, false); });
     hubMarkers.push(new maplibregl.Marker({ element: el }).setLngLat([h.lng, h.lat]).addTo(map));
   });
@@ -573,9 +580,10 @@ function openHub(i, fly){
   showPopup([h.lng, h.lat],
     '<div class="pp">'
     + '<div class="pp-k twr">Большая антенна · вышка</div>'
-    + '<div class="pp-t">№' + (i + 1) + ' · ' + esc(h.addr) + '</div>'
+    + '<div class="pp-t">' + esc(hubName(h, i)) + ' · ' + esc(h.addr) + '</div>'
     + '<div class="pp-sub">' + esc(h.area) + '</div>'
     + '<div class="pp-rows">'
+    +   '<div class="pp-row"><span>Gateway ID</span><b>' + esc(h.gatewayId) + '</b></div>'
     +   '<div class="pp-row"><span>Радиус покрытия</span><b class="hot">9 км</b></div>'
     +   '<div class="pp-row"><span>Координаты</span><b>' + h.lat.toFixed(6) + ', ' + h.lng.toFixed(6) + '</b></div>'
     + '</div>'
@@ -648,14 +656,15 @@ function renderList(){
   } else {
     $("listNote").textContent = "большие антенны · адреса";
     HUBS.forEach((h, i) => {
-      if (q && !(h.addr + " " + h.area).toLowerCase().includes(q)) return;
+      if (q && !(h.addr + " " + h.area + " " + hubName(h, i) + " " + h.gatewayId).toLowerCase().includes(q)) return;
       const el = document.createElement("div");
       el.className = "item";
       el.style.animationDelay = Math.min(shown * 22, 380) + "ms";
       el.innerHTML =
         '<div class="twr-ico">' + (i + 1) + '</div>'
-        + '<div class="body"><div class="name">' + esc(h.addr) + '</div>'
-        + '<div class="meta">' + esc(h.area) + '</div></div>'
+        + '<div class="body"><div class="name"><span class="code">' + esc(hubName(h, i)) + '</span></div>'
+        + '<div class="meta">' + esc(h.gatewayId) + '</div>'
+        + '<div class="meta">' + esc(h.addr) + ' · ' + esc(h.area) + '</div></div>'
         + '<div class="cnt" style="font-size:11px;color:var(--muted)">' + h.lat.toFixed(3) + '<small style="text-transform:none;letter-spacing:0">' + h.lng.toFixed(3) + '</small></div>';
       el.onclick = () => openHub(i, true);
       $list.appendChild(el); shown++;
