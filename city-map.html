@@ -1,0 +1,953 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Tojikelectrocomplect &amp; Baylan · Реестр антенн</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📡</text></svg>" />
+<link rel="stylesheet" href="./vendor/leaflet/leaflet.css" />
+<style>
+  :root {
+    color-scheme: light;
+    --ink: #eef1f5;
+    --glass: rgba(255, 255, 255, .94);
+    --glass-2: rgba(255, 255, 255, .97);
+    --raise: #f2f2f7;
+    --line: rgba(60, 60, 67, .12);
+    --line-2: rgba(60, 60, 67, .20);
+    --text: #1d1d1f;
+    --muted: #6e6e73;
+    --faint: #8e8e93;
+    --accent: #007aff;
+    --accent-2: #0066d6;
+    --accent-soft: rgba(0, 122, 255, .10);
+    --tower: #ff3b30;
+    --ok: #34c759;
+    --mono: ui-monospace, "SFMono-Regular", SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    --disp: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
+    --body: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+    --peek: calc(64px + env(safe-area-inset-bottom, 0px));
+    --ease: cubic-bezier(.32, .72, 0, 1);
+    --shadow: 0 18px 48px rgba(0, 0, 0, .14), 0 2px 8px rgba(0, 0, 0, .06);
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    font-family: var(--body); color: var(--text); background: var(--ink);
+    height: 100vh; height: 100dvh; overflow: hidden; overscroll-behavior: none;
+    -webkit-tap-highlight-color: transparent; -webkit-font-smoothing: antialiased;
+  }
+
+  #map { position: absolute; z-index: 0; inset: 0; background: #e9edf0; }
+  #map canvas { outline: none; }
+  .map-marker { background: transparent; border: 0; }
+  .leaflet-container { font-family: var(--body); }
+  .leaflet-popup-content-wrapper { padding: 0; background: transparent; box-shadow: none; }
+  .leaflet-popup-content { margin: 0; }
+  .leaflet-popup-tip-container { display: none; }
+  .leaflet-top.leaflet-right { max-width: calc(100% - 24px); }
+  .yandex-brand { background: rgba(255,255,255,.94); border-radius: 8px; display: flex; align-items: center; }
+  .yandex-brand img { display: block; width: 88px; height: auto; }
+  .yandex-brand .open-yandex { padding: 8px 10px 8px 0; font-size: 11px; color: #333; }
+  .leaflet-control-attribution { font-size: 10px; border-radius: 5px; }
+  .leaflet-bottom.leaflet-right { bottom: var(--map-control-bottom, 14px); }
+  button:focus-visible, a:focus-visible, input:focus-visible {
+    outline: 3px solid rgba(0, 122, 255, .28); outline-offset: 2px;
+  }
+
+  /* ═══════════════ floating control panel ═══════════════ */
+  #panel {
+    position: absolute; z-index: 30; top: 16px; left: 16px; bottom: 16px; width: 380px;
+    display: flex; flex-direction: column;
+    background: var(--glass); backdrop-filter: blur(28px) saturate(1.15); -webkit-backdrop-filter: blur(28px) saturate(1.15);
+    border: 1px solid rgba(255, 255, 255, .82); border-radius: 22px; box-shadow: var(--shadow);
+    overflow: hidden; transition: transform .28s var(--ease), opacity .2s ease-out;
+  }
+  body.panel-hidden #panel { transform: translateX(-112%); opacity: 0; pointer-events: none; }
+
+  #panelOpen {
+    position: absolute; z-index: 29; top: 16px; left: 16px; display: none; align-items: center; gap: 8px;
+    padding: 10px 14px; background: var(--glass); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    color: var(--text); border: 1px solid rgba(255, 255, 255, .82); border-radius: 13px;
+    font: 600 13px/1 var(--body); cursor: pointer; box-shadow: var(--shadow);
+    transition: transform .14s ease-out, background-color .16s ease;
+  }
+  #panelOpen:active { transform: scale(.97); }
+  body.panel-hidden #panelOpen { display: flex; }
+
+  .sheet-toggle { display: none; }
+
+  .head { padding: 18px 18px 15px; border-bottom: 1px solid var(--line); }
+  .brand { display: flex; align-items: center; gap: 11px; }
+  .brand > div:nth-child(2) { min-width: 0; flex: 1; }
+  .logo {
+    flex: 0 0 auto; width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center;
+    background: var(--accent); color: #fff;
+  }
+  .logo svg { width: 22px; height: 22px; }
+  .brand h1 {
+    margin: 0; font: 700 14px/1.18 var(--disp); letter-spacing: -.025em; white-space: nowrap;
+  }
+  .brand h1 em { font-style: normal; color: var(--faint); font-weight: 500; }
+  .brand .sub { margin-top: 3px; font-size: 11px; color: var(--muted); letter-spacing: -.005em; }
+  .navbtn {
+    margin-left: auto; flex: 0 0 auto; width: 30px; height: 30px; display: grid; place-items: center;
+    background: var(--raise); border: 0; border-radius: 9px; color: var(--muted);
+    font-size: 17px; padding: 0 0 2px; cursor: pointer;
+    transition: transform .14s ease-out, background-color .16s ease, color .16s ease;
+  }
+  .navbtn:active { transform: scale(.94); }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; margin-top: 15px; }
+  .stat {
+    background: var(--raise); border: 0; border-radius: 11px;
+    padding: 8px 4px 7px; text-align: center;
+  }
+  .stat b { display: block; font: 700 15px/1.1 var(--body); letter-spacing: -.02em; }
+  .stat span { display: block; margin-top: 3px; font-size: 9.5px; color: var(--muted); letter-spacing: .01em; }
+  .stat.hot b { color: var(--accent); }
+
+  .controls { padding: 13px 16px 12px; display: flex; flex-direction: column; gap: 10px; border-bottom: 1px solid var(--line); }
+  .search { position: relative; }
+  .search input {
+    width: 100%; background: var(--raise); border: 1px solid transparent; color: var(--text);
+    border-radius: 11px; padding: 9px 12px 9px 34px; font: 400 13.5px var(--body); outline: none;
+    transition: border-color .16s ease, box-shadow .16s ease, background-color .16s ease;
+  }
+  .search input::placeholder { color: var(--faint); }
+  .search input:focus { border-color: rgba(0,122,255,.42); background: #fff; box-shadow: 0 0 0 3px var(--accent-soft); }
+  .search svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; color: var(--faint); }
+
+  .row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .seg { display: flex; width: 100%; background: var(--raise); border: 0; border-radius: 10px; padding: 2px; }
+  .seg button {
+    flex: 1; border: 0; background: transparent; color: var(--muted); font: 600 12px var(--body);
+    padding: 7px 10px; border-radius: 8px; cursor: pointer;
+    transition: transform .14s ease-out, background-color .16s ease, color .16s ease, box-shadow .16s ease;
+  }
+  .seg button.on { background: #fff; color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.10); }
+  .seg button:active { transform: scale(.97); }
+  .seg button:focus-visible { outline: 3px solid rgba(0,122,255,.22); outline-offset: 1px; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip { position: relative; cursor: pointer; }
+  .chip input { position: absolute; opacity: 0; pointer-events: none; }
+  .chip span {
+    display: inline-flex; align-items: center; gap: 5px; padding: 5.5px 10px; border-radius: 999px;
+    background: var(--raise); border: 1px solid transparent; color: var(--muted);
+    font-size: 11.5px; font-weight: 600; user-select: none; -webkit-user-select: none;
+    transition: transform .14s ease-out, background-color .16s ease, border-color .16s ease, color .16s ease;
+  }
+  .chip span::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: .5; }
+  .chip input:checked + span { background: var(--accent-soft); border-color: rgba(0,122,255,.18); color: var(--accent-2); }
+  .chip input:checked + span::before { background: var(--accent); opacity: 1; }
+  .chip input:focus-visible + span { outline: 3px solid rgba(0,122,255,.22); outline-offset: 1px; }
+  .chip:active span { transform: scale(.97); }
+  .assignment-key { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 10.5px; }
+  .assignment-key span { display: inline-flex; align-items: center; gap: 5px; }
+  .assignment-key i { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); border: 1.5px solid var(--accent); }
+  .assignment-key .open { background: rgba(255,255,255,.9); opacity: .62; }
+
+  /* tabs */
+  .tabs { display: flex; gap: 2px; margin: 11px 16px 0; padding: 2px; background: var(--raise); border-radius: 10px; }
+  .tab {
+    flex: 1; background: transparent; border: 0; color: var(--muted);
+    font: 600 12px var(--body); letter-spacing: -.005em;
+    padding: 7px 4px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 7px;
+    transition: transform .14s ease-out, color .16s ease, background-color .16s ease, box-shadow .16s ease;
+  }
+  .tab:active { transform: scale(.98); }
+  .tab .n { font: 600 10px/1.5 var(--body); background: rgba(60,60,67,.08); border-radius: 999px; padding: 1px 7px; color: var(--muted); }
+  .tab.on { color: var(--text); background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+  .tab.on .n { background: var(--accent-soft); color: var(--accent-2); }
+  .list-note { display: flex; align-items: center; padding: 11px 18px 3px; color: var(--faint); font-size: 10.5px; letter-spacing: .01em; }
+  .list-note .reset {
+    margin-left: auto; display: none; background: none; border: none; color: var(--accent);
+    font: 600 11px var(--body); letter-spacing: 0; cursor: pointer; padding: 2px 4px;
+  }
+  .list-note .reset:hover { text-decoration: underline; }
+
+  #list { flex: 1; min-height: 0; overflow-y: auto; padding: 4px 10px 12px; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--line-2) transparent; }
+  #list::-webkit-scrollbar { width: 7px; }
+  #list::-webkit-scrollbar-thumb { background: var(--line); border-radius: 8px; }
+
+  .item {
+    display: flex; align-items: center; gap: 11px; padding: 9px 10px; border-radius: 12px;
+    cursor: pointer; border: 1px solid transparent; animation: rise .28s var(--ease) both;
+    transition: transform .14s ease-out, background-color .16s ease, border-color .16s ease;
+  }
+  @keyframes rise { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: none; } }
+  .item:active { transform: scale(.985); }
+  .item.active { background: var(--accent-soft); border-color: rgba(0,122,255,.15); }
+  .swatch { flex: 0 0 auto; width: 13px; height: 13px; border-radius: 50%; border: 2px solid #fff; outline: 1px solid rgba(60,60,67,.12); }
+  .item .body { flex: 1; min-width: 0; }
+  .item .name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .item .meta { font-size: 11px; color: var(--muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .item .cnt { font: 650 13px var(--body); color: var(--text); font-variant-numeric: tabular-nums; }
+  .item .cnt small { display: block; font: 500 9px var(--body); color: var(--faint); letter-spacing: .01em; text-align: right; }
+  .item .gateway-counts { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; min-width: 72px; }
+  .item .gateway-counts .metric { display: flex; align-items: baseline; justify-content: flex-end; gap: 5px; line-height: 1; }
+  .item .gateway-counts b { font: 650 13px var(--body); font-variant-numeric: tabular-nums; }
+  .item .gateway-counts small { display: inline; min-width: 30px; font-size: 9px; text-align: left; }
+  .item .gateway-counts .without-id b { color: var(--muted); }
+  .apx { color: var(--accent-2); font-weight: 700; }
+  .item .name .code {
+    display: inline-block; margin-right: 6px; padding: 1px 5px; border-radius: 5px;
+    background: rgba(255, 59, 48, .09); border: 1px solid rgba(255, 59, 48, .16);
+    color: #d92d20; font: 650 10.5px var(--mono); letter-spacing: .02em; vertical-align: 1px;
+  }
+  .twr-ico {
+    flex: 0 0 auto; width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center;
+    background: rgba(255, 59, 48, .09); border: 1px solid rgba(255, 59, 48, .16); color: #d92d20;
+    font: 700 12px var(--body);
+  }
+  .empty { padding: 26px 16px; color: var(--muted); font-size: 13px; text-align: center; line-height: 1.6; }
+
+  .foot { border-top: 1px solid var(--line); padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0px)); display: flex; gap: 8px; }
+  .foot button {
+    flex: 1; display: flex; align-items: center; justify-content: center; gap: 7px;
+    background: var(--raise); border: 0; color: var(--text);
+    font: 600 12.5px var(--body); padding: 10px; border-radius: 11px; cursor: pointer;
+    transition: transform .14s ease-out, background-color .16s ease, color .16s ease;
+  }
+  .foot button:active { transform: scale(.97); }
+  .foot button svg { width: 14px; height: 14px; color: var(--muted); }
+
+  /* ═══════════════ map markers ═══════════════ */
+  /* Leaflet positions the marker container; animations stay on inner elements. */
+  .mhl { width: 15px; height: 15px; cursor: pointer; }
+  .mhl .mdot {
+    display: block; width: 100%; height: 100%; border-radius: 50%;
+    border: 2px solid rgba(255,255,255,.96); box-shadow: 0 1px 4px rgba(0,0,0,.22);
+    transition: transform .14s ease-out;
+  }
+  .mhl:active .mdot { transform: scale(.9); }
+
+  .hub { position: relative; width: 46px; height: 46px; cursor: pointer; }
+  .hub .ring, .hub .ring2 {
+    display: none;
+  }
+  .hub .core {
+    position: absolute; inset: 6px; border-radius: 50%; display: grid; place-items: center; color: #fff;
+    background: var(--tower); border: 2.5px solid rgba(255,255,255,.98); box-shadow: 0 2px 5px rgba(0, 0, 0, .24);
+    transition: transform .14s ease-out;
+  }
+  .hub:active .core { transform: scale(.92); }
+  .hub .core svg { width: 17px; height: 17px; }
+  .hub .num {
+    position: absolute; top: -3px; right: -3px; z-index: 3; min-width: 19px; height: 19px; padding: 0 5px;
+    border-radius: 999px; background: #3a3a3c; color: #fff; border: 2px solid #fff;
+    font: 700 10.5px/15px var(--body); text-align: center;
+  }
+
+  /* ═══════════════ popups (Leaflet) ═══════════════ */
+  .map-popup {
+    position: relative; width: min(300px, 84vw);
+    background: var(--glass-2); backdrop-filter: blur(24px) saturate(1.1); -webkit-backdrop-filter: blur(24px) saturate(1.1);
+    color: var(--text); border: 1px solid rgba(255,255,255,.88); border-radius: 16px;
+    box-shadow: 0 12px 32px rgba(0,0,0,.16), 0 1px 4px rgba(0,0,0,.07); padding: 14px 16px 13px; font-family: var(--body);
+  }
+  .map-popup::after {
+    content: ""; position: absolute; left: 50%; bottom: -8px; width: 14px; height: 14px;
+    transform: translateX(-50%) rotate(45deg); background: rgba(255,255,255,.97);
+    border-right: 1px solid rgba(255,255,255,.88); border-bottom: 1px solid rgba(255,255,255,.88);
+  }
+  .popup-close {
+    position: absolute; z-index: 2; color: var(--muted); background: transparent; border: 0;
+    font: 400 20px/22px var(--body); right: 6px; top: 5px; border-radius: 7px; width: 24px; height: 24px;
+    cursor: pointer;
+  }
+  .popup-close:active { transform: scale(.9); background: var(--raise); }
+  .pp { min-width: 190px; }
+  .pp-k { font: 650 10px var(--body); letter-spacing: .02em; color: var(--accent-2); margin-bottom: 5px; display: flex; align-items: center; gap: 6px; }
+  .pp-k.twr { color: var(--tower); }
+  .pp-k::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+  .pp-t { font-size: 14.5px; font-weight: 700; line-height: 1.3; padding-right: 12px; }
+  .pp-sub { font-size: 12px; color: var(--muted); margin-top: 2px; line-height: 1.45; }
+  .pp-rows { margin-top: 9px; border-top: 1px solid var(--line); padding-top: 8px; display: flex; flex-direction: column; gap: 5px; }
+  .pp-row { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; font-size: 12px; color: var(--muted); }
+  .pp-row b { font: 600 12px var(--body); color: var(--text); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .pp-row b.hot { color: var(--accent-2); font-size: 13px; }
+  .pp-apx { margin-top: 7px; font-size: 11px; color: var(--accent-2); }
+  .pp-actions { display: flex; gap: 12px; margin-top: 10px; border-top: 1px solid var(--line); padding-top: 9px; }
+  .pp-actions a { color: var(--accent); font-size: 12px; font-weight: 600; text-decoration: none; }
+  .pp-actions a:hover { text-decoration: underline; }
+
+  /* hover tip */
+  #tip {
+    position: fixed; z-index: 60; display: none; pointer-events: none;
+    background: rgba(44, 44, 46, .94); color: #fff; border: 0; border-radius: 9px;
+    padding: 7px 10px; font: 500 12px var(--body); max-width: 250px; box-shadow: 0 6px 20px rgba(0,0,0,.18);
+  }
+  #tip b { font-family: var(--body); color: #fff; font-variant-numeric: tabular-nums; }
+
+  #mapError {
+    position: absolute; z-index: 80; top: 16px; left: 50%; transform: translateX(-50%); display: none;
+    width: min(520px, calc(100vw - 32px)); padding: 11px 14px; border-radius: 11px;
+    background: #7f1d1d; color: #fff; box-shadow: var(--shadow); font: 600 12.5px/1.45 var(--body);
+  }
+  #mapError.show { display: block; }
+
+  @media (hover: hover) and (pointer: fine) {
+    #panelOpen:hover, .navbtn:hover { background: #e9e9ee; color: var(--text); }
+    .chip:hover span { background: #e9e9ee; }
+    .item:hover { background: rgba(118,118,128,.08); border-color: rgba(60,60,67,.07); }
+    .foot button:hover { background: #e6e6eb; color: var(--accent-2); }
+    .foot button:hover svg { color: var(--accent); }
+    .mhl:hover .mdot { transform: scale(1.2); }
+    .hub:hover .core { transform: scale(1.06); }
+    .popup-close:hover { background: var(--raise); color: var(--text); }
+    .pp-actions a:hover { text-decoration: underline; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    #panel, #panelOpen, .navbtn, .chip span, .tab, .item, .foot button,
+    .mhl .mdot, .hub .core, .sheet-toggle .chev { transition-duration: .01ms !important; }
+    .item { animation: none; }
+  }
+
+  /* ═══════════════ mobile: bottom sheet ═══════════════ */
+  @media (max-width: 720px) {
+    #mapError { top: 82px; }
+    #panel {
+      top: auto; left: 0; right: 0; bottom: 0; width: 100%; max-height: 74dvh;
+      background: rgba(255,255,255,.97); border-radius: 24px 24px 0 0;
+      border: 1px solid rgba(255,255,255,.9); border-bottom: none;
+      box-shadow: 0 -8px 30px rgba(0,0,0,.12);
+      transform: translateY(0); transition: transform .3s var(--ease);
+    }
+    body.sheet-collapsed #panel { transform: translateY(calc(100% - var(--peek))); opacity: 1; pointer-events: auto; }
+    body.panel-hidden #panel { transform: translateY(0); opacity: 1; pointer-events: auto; }
+    .navbtn, #panelOpen { display: none !important; }
+    .sheet-toggle {
+      display: flex; flex: 0 0 auto; flex-direction: column; align-items: center; gap: 8px;
+      height: 64px; width: 100%; padding: 10px 16px 0; background: none; border: none; color: var(--text);
+      font: 500 13px var(--body); cursor: pointer; touch-action: none;
+    }
+    .sheet-toggle:focus { outline: none; }
+    .sheet-toggle:focus-visible { box-shadow: none; }
+    .sheet-toggle:focus-visible .grab { background: var(--accent); }
+    .sheet-toggle .grab { width: 38px; height: 4.5px; border-radius: 999px; background: #c7c7cc; }
+    .sheet-toggle .st-row { display: flex; align-items: center; gap: 6px; color: var(--muted); white-space: nowrap; }
+    .sheet-toggle .st-row b { color: var(--text); font-family: var(--body); font-size: 13.5px; font-variant-numeric: tabular-nums; }
+    .sheet-toggle .chev { color: var(--faint); transition: transform .3s var(--ease); }
+    body.sheet-collapsed .sheet-toggle .chev { transform: rotate(180deg); }
+    .head { padding-top: 0; }
+    .stats { grid-template-columns: repeat(4, 1fr); }
+    .search input { font-size: 16px; }  /* ≥16px — iOS won't zoom the page on focus */
+    .map-popup { width: min(300px, 84vw); }
+  }
+</style>
+</head>
+<body>
+
+<div id="map"></div>
+<div id="mapError" role="alert"></div>
+
+<aside id="panel">
+  <button id="sheetToggle" class="sheet-toggle" aria-expanded="true">
+    <span class="grab"></span>
+    <span class="st-row"><b id="shAnt">—</b> антенн · <b id="shTwr">8</b> вышек <span class="chev">▾</span></span>
+  </button>
+
+  <header class="head">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <circle cx="12" cy="11" r="1.6" fill="currentColor" stroke="none"/>
+          <path d="M8.6 14.4a4.8 4.8 0 0 1 0-6.8M15.4 7.6a4.8 4.8 0 0 1 0 6.8"/>
+          <path d="M5.8 17.2a8.8 8.8 0 0 1 0-12.4M18.2 4.8a8.8 8.8 0 0 1 0 12.4"/>
+          <path d="M12 13v8"/>
+        </svg>
+      </div>
+      <div>
+        <h1>Tojikelectrocomplect <em>&amp;</em> Baylan</h1>
+        <div class="sub">Прежняя оценка · <a href="./">Сино: адреса из реестров</a></div>
+      </div>
+      <button id="panelHide" class="navbtn" title="Скрыть панель">‹</button>
+    </div>
+    <div class="stats">
+      <div class="stat hot"><b id="stAnt">0</b><span>всего</span></div>
+      <div class="stat"><b id="stAssigned">0</b><span>с ID</span></div>
+      <div class="stat"><b id="stUnassigned">0</b><span>без ID</span></div>
+      <div class="stat"><b>8</b><span>вышек</span></div>
+    </div>
+  </header>
+
+  <div class="controls">
+    <div class="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.4-3.4"/></svg>
+      <input id="search" type="text" placeholder="Поиск махалли или вышки…" autocomplete="off" />
+    </div>
+    <div class="row">
+      <div class="chips">
+        <label class="chip"><input type="checkbox" id="tgMarks" checked /><span>Махаллы</span></label>
+        <label class="chip"><input type="checkbox" id="tgHubs" checked /><span>Вышки</span></label>
+        <label class="chip"><input type="checkbox" id="tgRadius" /><span>Радиус 9 км</span></label>
+      </div>
+    </div>
+    <div class="seg" role="group" aria-label="Фильтр модулей по наличию ID">
+      <button type="button" class="on" data-id-status="all" aria-pressed="true">Все</button>
+      <button type="button" data-id-status="1" aria-pressed="false">С ID</button>
+      <button type="button" data-id-status="0" aria-pressed="false">Без ID</button>
+    </div>
+    <div class="assignment-key" aria-label="Статус модулей">
+      <span><i></i>есть ID</span>
+      <span><i class="open"></i>нет ID</span>
+    </div>
+  </div>
+
+  <nav class="tabs">
+    <button class="tab on" data-t="mah">Махаллы <span class="n" id="nMah">35</span></button>
+    <button class="tab" data-t="twr">Вышки <span class="n">8</span></button>
+  </nav>
+  <div class="list-note"><span id="listNote">по числу антенн</span><button class="reset" id="reset">✕ Сброс фильтра</button></div>
+  <div id="list"></div>
+
+  <footer class="foot">
+    <button id="exportCsv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>Экспорт CSV</button>
+    <button id="fit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>Вся карта</button>
+  </footer>
+</aside>
+
+<button id="panelOpen">☰ Реестр</button>
+<div id="tip"></div>
+
+<script src="./vendor/leaflet/leaflet.js"></script>
+<script src="./map-config.js"></script>
+<script src="./yandex-tiles.js"></script>
+<script src="./map-background.js"></script>
+<script src="./assignment-data.js"></script>
+
+<script>
+/* ═════════════════ REAL REGISTRY DATA (baked from Excel) ═════════════════ */
+const FAMILIES = [{"key": "мухаммадиев", "label": "Мухаммадиев", "lat": 38.575906, "lng": 68.730769, "approx": false, "count": 1404, "rows": 45, "color": "#ef4444"}, {"key": "сино", "label": "Сино", "lat": 38.530108, "lng": 68.758385, "approx": false, "count": 965, "rows": 39, "color": "#f97316"}, {"key": "испечак 2", "label": "Испечак 2", "lat": 38.582174, "lng": 68.723905, "approx": false, "count": 901, "rows": 126, "color": "#f59e0b"}, {"key": "зарафшон", "label": "Зарафшон", "lat": 38.580231, "lng": 68.704474, "approx": false, "count": 584, "rows": 57, "color": "#eab308"}, {"key": "испечак 1", "label": "Испечак 1", "lat": 38.585448, "lng": 68.728182, "approx": false, "count": 497, "rows": 41, "color": "#84cc16"}, {"key": "нусратулло махсум", "label": "Нусратулло Махсум", "lat": 38.580916, "lng": 68.729424, "approx": false, "count": 494, "rows": 27, "color": "#22c55e"}, {"key": "хувайдуллоев", "label": "Хувайдуллоев", "lat": 38.561578, "lng": 68.760573, "approx": false, "count": 482, "rows": 27, "color": "#10b981"}, {"key": "хучамбиёи поён", "label": "Хучамбиёи Поён", "lat": 38.599, "lng": 68.702, "approx": true, "count": 421, "rows": 1, "color": "#14b8a6"}, {"key": "чагатай шодоб", "label": "Чагатай Шодоб", "lat": 38.601, "lng": 68.776, "approx": true, "count": 381, "rows": 1, "color": "#06b6d4"}, {"key": "шафак", "label": "Шафак", "lat": 38.576058, "lng": 68.792199, "approx": false, "count": 260, "rows": 1, "color": "#0ea5e9"}, {"key": "бинихисорак", "label": "Бинихисорак", "lat": 38.56, "lng": 68.728, "approx": true, "count": 244, "rows": 1, "color": "#3b82f6"}, {"key": "маяковский", "label": "Маяковский", "lat": 38.551969, "lng": 68.748155, "approx": false, "count": 220, "rows": 17, "color": "#6366f1"}, {"key": "чортути", "label": "Чортути", "lat": 38.560398, "lng": 68.724342, "approx": false, "count": 212, "rows": 2, "color": "#8b5cf6"}, {"key": "навобод", "label": "Навобод", "lat": 38.594333, "lng": 68.757241, "approx": false, "count": 200, "rows": 1, "color": "#a855f7"}, {"key": "шараф", "label": "Шараф", "lat": 38.58105, "lng": 68.762222, "approx": false, "count": 145, "rows": 1, "color": "#d946ef"}, {"key": "озодии занон", "label": "Озодии Занон", "lat": 38.593626, "lng": 68.792039, "approx": false, "count": 132, "rows": 1, "color": "#ec4899"}, {"key": "яккачинор", "label": "Яккачинор", "lat": 38.567621, "lng": 68.759702, "approx": false, "count": 122, "rows": 11, "color": "#f43f5e"}, {"key": "шерализода", "label": "Шерализода", "lat": 38.569143, "lng": 68.755205, "approx": false, "count": 109, "rows": 9, "color": "#fb7185"}, {"key": "кабодиён", "label": "Кабодиён", "lat": 38.547, "lng": 68.754, "approx": true, "count": 82, "rows": 2, "color": "#fbbf24"}, {"key": "а.навои", "label": "А.навои", "lat": 38.590916, "lng": 68.736086, "approx": false, "count": 69, "rows": 2, "color": "#4ade80"}, {"key": "армугон", "label": "Армугон", "lat": 38.564, "lng": 68.72, "approx": true, "count": 63, "rows": 1, "color": "#2dd4bf"}, {"key": "вахобчонов", "label": "Вахобчонов", "lat": 38.569, "lng": 68.744, "approx": true, "count": 53, "rows": 3, "color": "#38bdf8"}, {"key": "хаёти нав", "label": "Хаёти Нав", "lat": 38.574588, "lng": 68.748084, "approx": false, "count": 53, "rows": 2, "color": "#818cf8"}, {"key": "зарафшон 2", "label": "Зарафшон 2", "lat": 38.5835, "lng": 68.701, "approx": false, "count": 50, "rows": 13, "color": "#c084fc"}, {"key": "нодира", "label": "Нодира", "lat": 38.646584, "lng": 68.767909, "approx": false, "count": 45, "rows": 1, "color": "#ef4444"}, {"key": "шерози", "label": "Шерози", "lat": 38.558329, "lng": 68.761924, "approx": false, "count": 39, "rows": 5, "color": "#f97316"}, {"key": "маякоский", "label": "Маякоский", "lat": 38.551969, "lng": 68.748155, "approx": false, "count": 22, "rows": 2, "color": "#f59e0b"}, {"key": "а.сафар", "label": "А.сафар", "lat": 38.558, "lng": 68.752, "approx": true, "count": 12, "rows": 2, "color": "#eab308"}, {"key": "зафар", "label": "Зафар", "lat": 38.57929, "lng": 68.806155, "approx": false, "count": 6, "rows": 3, "color": "#84cc16"}, {"key": "мехробод", "label": "Мехробод", "lat": 38.573454, "lng": 68.672645, "approx": false, "count": 3, "rows": 1, "color": "#22c55e"}, {"key": "лаби толл", "label": "Лаби Толл", "lat": 38.552, "lng": 68.758, "approx": true, "count": 3, "rows": 1, "color": "#10b981"}, {"key": "навбахор", "label": "Навбахор", "lat": 38.513157, "lng": 68.726746, "approx": false, "count": 2, "rows": 1, "color": "#14b8a6"}, {"key": "самарканд", "label": "Самарканд", "lat": 38.595779, "lng": 68.750678, "approx": false, "count": 1, "rows": 1, "color": "#06b6d4"}, {"key": "хуснобод", "label": "Хуснобод", "lat": 38.564628, "lng": 68.77761, "approx": false, "count": 1, "rows": 1, "color": "#0ea5e9"}, {"key": "семенова", "label": "Семенова", "lat": 38.594358, "lng": 68.746809, "approx": false, "count": 1, "rows": 1, "color": "#3b82f6"}];
+const REGISTRY = [{"m": "махаллаи Бинихисорак", "h": "", "c": 244, "fi": 10, "lat": 38.560502, "lng": 68.729434, "ap": 1}, {"m": "махаллаи Маяковский", "h": "1//11", "c": 49, "fi": 11, "lat": 38.551372, "lng": 68.747664, "ap": 0}, {"m": "махаллаи Маяковский", "h": "25//2", "c": 50, "fi": 11, "lat": 38.550484, "lng": 68.744338, "ap": 0}, {"m": "махаллаи Маяковский", "h": "38", "c": 11, "fi": 11, "lat": 38.550577, "lng": 68.745175, "ap": 0}, {"m": "махаллаи Маяковский", "h": "40/1", "c": 1, "fi": 11, "lat": 38.551744, "lng": 68.75271, "ap": 0}, {"m": "махаллаи Маяковский", "h": "40", "c": 1, "fi": 11, "lat": 38.553786, "lng": 68.752471, "ap": 0}, {"m": "махаллаи Маяковский", "h": "36", "c": 17, "fi": 11, "lat": 38.551983, "lng": 68.749703, "ap": 0}, {"m": "махаллаи Маяковский", "h": "6//2", "c": 28, "fi": 11, "lat": 38.552421, "lng": 68.749103, "ap": 0}, {"m": "махаллаи Маяковский", "h": "12", "c": 7, "fi": 11, "lat": 38.552565, "lng": 68.746527, "ap": 0}, {"m": "махаллаи Маяковский", "h": "22", "c": 9, "fi": 11, "lat": 38.554807, "lng": 68.751125, "ap": 0}, {"m": "махаллаи Маяковский", "h": "6//3", "c": 19, "fi": 11, "lat": 38.548972, "lng": 68.7488, "ap": 0}, {"m": "махаллаи Маяковский", "h": "24", "c": 2, "fi": 11, "lat": 38.552462, "lng": 68.750163, "ap": 0}, {"m": "махаллаи Маяковский", "h": "6//1", "c": 12, "fi": 11, "lat": 38.55314, "lng": 68.750909, "ap": 0}, {"m": "махаллаи Маяковский", "h": "48", "c": 1, "fi": 11, "lat": 38.552442, "lng": 68.746402, "ap": 0}, {"m": "махаллаи Маяковский", "h": "13", "c": 1, "fi": 11, "lat": 38.552489, "lng": 68.746575, "ap": 0}, {"m": "махаллаи Маяковский", "h": "24", "c": 8, "fi": 11, "lat": 38.552462, "lng": 68.750163, "ap": 0}, {"m": "махаллаи Маяковский пр2", "h": "12", "c": 3, "fi": 11, "lat": 38.555064, "lng": 68.745473, "ap": 0}, {"m": "махаллаи Маяковский пр3", "h": "62", "c": 1, "fi": 11, "lat": 38.552689, "lng": 68.742971, "ap": 0}, {"m": "махаллаи Мехробод", "h": "", "c": 3, "fi": 29, "lat": 38.573388, "lng": 68.673848, "ap": 0}, {"m": "махаллаи Самарканд", "h": "", "c": 1, "fi": 32, "lat": 38.595892, "lng": 68.751623, "ap": 0}, {"m": "махаллаи Хуснобод", "h": "", "c": 1, "fi": 33, "lat": 38.564539, "lng": 68.776272, "ap": 0}, {"m": "махаллаи Зафар", "h": "", "c": 1, "fi": 28, "lat": 38.578339, "lng": 68.807398, "ap": 0}, {"m": "махаллаи И. Вахобчонов", "h": "", "c": 20, "fi": 21, "lat": 38.569505, "lng": 68.74509, "ap": 1}, {"m": "махаллаи А.Сафар", "h": "", "c": 4, "fi": 27, "lat": 38.557141, "lng": 68.750838, "ap": 1}, {"m": "махаллаи Шараф", "h": "", "c": 145, "fi": 14, "lat": 38.582208, "lng": 68.761951, "ap": 0}, {"m": "махаллаи Кабодиен", "h": "", "c": 42, "fi": 18, "lat": 38.546202, "lng": 68.754832, "ap": 1}, {"m": "махаллаи Хаёти Нав", "h": "", "c": 49, "fi": 22, "lat": 38.573623, "lng": 68.748436, "ap": 0}, {"m": "махаллаи Маякоский", "h": "14", "c": 5, "fi": 26, "lat": 38.551182, "lng": 68.748095, "ap": 0}, {"m": "махаллаи Маякоский", "h": "18", "c": 17, "fi": 26, "lat": 38.552405, "lng": 68.748665, "ap": 0}, {"m": "махаллаи И. Вахобчонов", "h": "", "c": 23, "fi": 21, "lat": 38.569505, "lng": 68.74509, "ap": 1}, {"m": "махаллаи Зафар", "h": "", "c": 4, "fi": 28, "lat": 38.578339, "lng": 68.807398, "ap": 0}, {"m": "махаллаи Синно", "h": "54", "c": 88, "fi": 1, "lat": 38.532246, "lng": 68.757164, "ap": 0}, {"m": "Махаллаи Хучамбиёи Поён", "h": "", "c": 421, "fi": 7, "lat": 38.599818, "lng": 68.702762, "ap": 1}, {"m": "махаллаи Шафак", "h": "", "c": 260, "fi": 9, "lat": 38.576171, "lng": 68.791081, "ap": 0}, {"m": "махаллаи А. Сафар", "h": "", "c": 8, "fi": 27, "lat": 38.557978, "lng": 68.752212, "ap": 1}, {"m": "махаллаи Э. Вахобчонов", "h": "", "c": 10, "fi": 21, "lat": 38.568861, "lng": 68.744695, "ap": 1}, {"m": "махаллаи Кабодиён", "h": "", "c": 40, "fi": 18, "lat": 38.546013, "lng": 68.75459, "ap": 1}, {"m": "махаллаи Семенова", "h": "13 пр 1", "c": 1, "fi": 34, "lat": 38.59478, "lng": 68.747942, "ap": 0}, {"m": "махаллаи Зафар", "h": "42", "c": 1, "fi": 28, "lat": 38.579193, "lng": 68.807649, "ap": 0}, {"m": "махаллаи Чагатай шодоб", "h": "", "c": 381, "fi": 8, "lat": 38.601124, "lng": 68.776464, "ap": 1}, {"m": "махаллаи Армугон", "h": "", "c": 63, "fi": 20, "lat": 38.564829, "lng": 68.719165, "ap": 1}, {"m": "махаллаи хаёти нав", "h": "", "c": 4, "fi": 22, "lat": 38.57581, "lng": 68.748418, "ap": 0}, {"m": "махаллаи Сино", "h": "130/2", "c": 63, "fi": 1, "lat": 38.527824, "lng": 68.763228, "ap": 0}, {"m": "махаллаи Нодира", "h": "", "c": 45, "fi": 24, "lat": 38.645908, "lng": 68.767802, "ap": 0}, {"m": "махаллаи Сино", "h": "130/5", "c": 48, "fi": 1, "lat": 38.532496, "lng": 68.755363, "ap": 0}, {"m": "махаллаи Сино", "h": "130/4", "c": 70, "fi": 1, "lat": 38.526123, "lng": 68.754787, "ap": 0}, {"m": "махаллаи Сино", "h": "136/6", "c": 18, "fi": 1, "lat": 38.53387, "lng": 68.760285, "ap": 0}, {"m": "махаллаи Сино", "h": "132", "c": 7, "fi": 1, "lat": 38.527549, "lng": 68.764405, "ap": 0}, {"m": "махаллаи Хувайдуллоев", "h": "", "c": 102, "fi": 6, "lat": 38.563848, "lng": 68.765103, "ap": 0}, {"m": "махаллаи Сино", "h": "132/8", "c": 9, "fi": 1, "lat": 38.525028, "lng": 68.760399, "ap": 0}, {"m": "махаллаи Шерози", "h": "33", "c": 10, "fi": 25, "lat": 38.558205, "lng": 68.762908, "ap": 0}, {"m": "махаллаи Сино", "h": "132/7", "c": 9, "fi": 1, "lat": 38.528533, "lng": 68.754631, "ap": 0}, {"m": "махаллаи Сино", "h": "132/4", "c": 58, "fi": 1, "lat": 38.529111, "lng": 68.755646, "ap": 0}, {"m": "махаллаи Сино", "h": "136/2", "c": 3, "fi": 1, "lat": 38.530244, "lng": 68.752876, "ap": 0}, {"m": "махаллаи Сино", "h": "138/2", "c": 39, "fi": 1, "lat": 38.529645, "lng": 68.752997, "ap": 0}, {"m": "махаллаи Сино", "h": "134/4", "c": 2, "fi": 1, "lat": 38.529585, "lng": 68.755658, "ap": 0}, {"m": "махаллаи Сино", "h": "136/2", "c": 35, "fi": 1, "lat": 38.530244, "lng": 68.752876, "ap": 0}, {"m": "махаллаи Сино", "h": "132/8", "c": 4, "fi": 1, "lat": 38.525028, "lng": 68.760399, "ap": 0}, {"m": "махаллаи Сино", "h": "136/6", "c": 24, "fi": 1, "lat": 38.53387, "lng": 68.760285, "ap": 0}, {"m": "махаллаи Сино", "h": "132/4", "c": 13, "fi": 1, "lat": 38.529111, "lng": 68.755646, "ap": 0}, {"m": "махаллаи Сино", "h": "132/6", "c": 50, "fi": 1, "lat": 38.533929, "lng": 68.761676, "ap": 0}, {"m": "махаллаи Шерози", "h": "31", "c": 4, "fi": 25, "lat": 38.558351, "lng": 68.762458, "ap": 0}, {"m": "махаллаи Сино", "h": "132/1", "c": 1, "fi": 1, "lat": 38.529478, "lng": 68.758306, "ap": 0}, {"m": "махаллаи Сино", "h": "136/7", "c": 25, "fi": 1, "lat": 38.529356, "lng": 68.761287, "ap": 0}, {"m": "махаллаи Сино", "h": "136/9", "c": 7, "fi": 1, "lat": 38.529148, "lng": 68.761075, "ap": 0}, {"m": "махаллаи Сино", "h": "136/11", "c": 4, "fi": 1, "lat": 38.533104, "lng": 68.753152, "ap": 0}, {"m": "махаллаи Сино", "h": "136/8", "c": 2, "fi": 1, "lat": 38.529386, "lng": 68.763683, "ap": 0}, {"m": "махаллаи Сино", "h": "130", "c": 13, "fi": 1, "lat": 38.531046, "lng": 68.763142, "ap": 0}, {"m": "махаллаи Яккачинор", "h": "144/3", "c": 12, "fi": 16, "lat": 38.565804, "lng": 68.758244, "ap": 0}, {"m": "махаллаи С. Шерози", "h": "31", "c": 4, "fi": 25, "lat": 38.557464, "lng": 68.760349, "ap": 0}, {"m": "махаллаи Шерализода", "h": "14//1", "c": 29, "fi": 17, "lat": 38.57119, "lng": 68.754265, "ap": 0}, {"m": "махаллаи Сино", "h": "136/9", "c": 13, "fi": 1, "lat": 38.529148, "lng": 68.761075, "ap": 0}, {"m": "махаллаи Сино", "h": "136/11", "c": 8, "fi": 1, "lat": 38.533104, "lng": 68.753152, "ap": 0}, {"m": "махаллаи Сино", "h": "130/12", "c": 2, "fi": 1, "lat": 38.527528, "lng": 68.758493, "ap": 0}, {"m": "махаллаи Сино", "h": "130/4", "c": 2, "fi": 1, "lat": 38.526123, "lng": 68.754787, "ap": 0}, {"m": "махаллаи Сино", "h": "136/12", "c": 2, "fi": 1, "lat": 38.529889, "lng": 68.761342, "ap": 0}, {"m": "махаллаи Сино", "h": "136/13", "c": 13, "fi": 1, "lat": 38.526402, "lng": 68.764022, "ap": 0}, {"m": "махаллаи С. Шерози", "h": "29", "c": 20, "fi": 25, "lat": 38.559581, "lng": 68.763002, "ap": 0}, {"m": "махаллаи Сино", "h": "136", "c": 4, "fi": 1, "lat": 38.526625, "lng": 68.763485, "ap": 0}, {"m": "махаллаи С. Шерози", "h": "27", "c": 1, "fi": 25, "lat": 38.559813, "lng": 68.762422, "ap": 0}, {"m": "махаллаи Сино", "h": "130/2", "c": 5, "fi": 1, "lat": 38.527824, "lng": 68.763228, "ap": 0}, {"m": "махаллаи Сино", "h": "132/8", "c": 1, "fi": 1, "lat": 38.525028, "lng": 68.760399, "ap": 0}, {"m": "махаллаи Сино", "h": "130", "c": 9, "fi": 1, "lat": 38.531046, "lng": 68.763142, "ap": 0}, {"m": "махаллаи Шерализода", "h": "14", "c": 15, "fi": 17, "lat": 38.570179, "lng": 68.753323, "ap": 0}, {"m": "махаллаи Шерализода", "h": "16", "c": 22, "fi": 17, "lat": 38.568754, "lng": 68.752466, "ap": 0}, {"m": "махаллаи Яккачинор", "h": "148/2", "c": 22, "fi": 16, "lat": 38.564734, "lng": 68.760099, "ap": 0}, {"m": "махаллаи Яккачинор", "h": "142/3", "c": 11, "fi": 16, "lat": 38.566838, "lng": 68.759252, "ap": 0}, {"m": "махаллаи Яккачинор", "h": "144/4", "c": 11, "fi": 16, "lat": 38.567895, "lng": 68.759408, "ap": 0}, {"m": "махаллаи Яккачинор", "h": "144/3", "c": 14, "fi": 16, "lat": 38.565804, "lng": 68.758244, "ap": 0}, {"m": "махаллаи Яккачинор", "h": "144/2", "c": 11, "fi": 16, "lat": 38.570081, "lng": 68.760389, "ap": 0}, {"m": "махаллаи Шерализода", "h": "14//1", "c": 7, "fi": 17, "lat": 38.57119, "lng": 68.754265, "ap": 0}, {"m": "махаллаи Яккачинор", "h": "150/1", "c": 6, "fi": 16, "lat": 38.568255, "lng": 68.7582, "ap": 0}, {"m": "махаллаи Яккачинор", "h": "152", "c": 4, "fi": 16, "lat": 38.5647, "lng": 68.75899, "ap": 0}, {"m": "махаллаи Яккачинор", "h": "150/1", "c": 12, "fi": 16, "lat": 38.568255, "lng": 68.7582, "ap": 0}, {"m": "махаллаи Навобод", "h": "", "c": 200, "fi": 13, "lat": 38.593874, "lng": 68.756582, "ap": 0}, {"m": "махаллаи Хувайдуллоев", "h": "141/4", "c": 30, "fi": 6, "lat": 38.562769, "lng": 68.761836, "ap": 0}, {"m": "махаллаи Хувайдуллоев", "h": "141/7", "c": 8, "fi": 6, "lat": 38.562178, "lng": 68.765442, "ap": 0}, {"m": "махаллаи Хувайдуллоев", "h": "142/2", "c": 18, "fi": 6, "lat": 38.567043, "lng": 68.763127, "ap": 0}, {"m": "махаллаи Хувайдуллоев", "h": "141/6", "c": 7, "fi": 6, "lat": 38.55868, "lng": 68.754455, "ap": 0}, {"m": "махаллаи Хувайдуллоев", "h": "143/2", "c": 21, "fi": 6, "lat": 38.565359, "lng": 68.75579, "ap": 0}, {"m": "махаллаи Хувайдуллоев", "h": "146/6", "c": 1, "fi": 6, "lat": 38.560371, "lng": 68.763855, "ap": 0}, {"m": "махаллаи Хувайдуллоев", "h": "141/3", "c": 4, "fi": 6, "lat": 38.565151, "lng": 68.757382, "ap": 0}, {"m": "махаллаи Хувайдуллоев", "h": "141/5", "c": 2, "fi": 6, "lat": 38.565079, "lng": 68.76433, "ap": 0}, {"m": "махаллаи Хувайдуллоев", "h": "141/1", "c": 22, "fi": 6, "lat": 38.560686, "lng": 68.75887, "ap": 0}, {"m": "махаллаи Хувайдуллоев", "h": "139", "c": 21, "fi": 6, "lat": 38.556644, "lng": 68.761812, "ap": 0}, {"m": "махаллаи Хувайдуллоев 3проезд", "h": "4", "c": 16, "fi": 6, "lat": 38.563694, "lng": 68.764034, "ap": 0}, {"m": "махаллаи Хувайдуллоев 4проезд", "h": "4", "c": 1, "fi": 6, "lat": 38.561102, "lng": 68.766984, "ap": 0}, {"m": "махаллаи Хувайдуллоев", "h": "141/2", "c": 12, "fi": 6, "lat": 38.563973, "lng": 68.764625, "ap": 0}, {"m": "махаллаи Хувайдуллоев", "h": "137/2", "c": 26, "fi": 6, "lat": 38.567008, "lng": 68.761863, "ap": 0}, {"m": "махаллаи Хувайдуллоев", "h": "137/1", "c": 25, "fi": 6, "lat": 38.560254, "lng": 68.755196, "ap": 0}, {"m": "махаллаи Хувайдуллоев 2 проезд", "h": "4", "c": 10, "fi": 6, "lat": 38.557603, "lng": 68.761785, "ap": 0}, {"m": "махаллаи Хувайдуллоев", "h": "218", "c": 10, "fi": 6, "lat": 38.5612, "lng": 68.764092, "ap": 0}, {"m": "махаллаи Хувайдуллоев 2 проезд", "h": "6", "c": 3, "fi": 6, "lat": 38.558781, "lng": 68.762011, "ap": 0}, {"m": "махаллаи Хувайдуллоев 2 проезд", "h": "8", "c": 9, "fi": 6, "lat": 38.560459, "lng": 68.758095, "ap": 0}, {"m": "махаллаи Хувайдуллоев", "h": "8", "c": 11, "fi": 6, "lat": 38.556914, "lng": 68.758853, "ap": 0}, {"m": "махаллаи Хувайдуллоев", "h": "6", "c": 10, "fi": 6, "lat": 38.56548, "lng": 68.762905, "ap": 0}, {"m": "махаллаи Шерализода", "h": "4//1", "c": 14, "fi": 17, "lat": 38.569464, "lng": 68.758057, "ap": 0}, {"m": "махаллаи Хувайдуллоев 2 проезд", "h": "7", "c": 15, "fi": 6, "lat": 38.564447, "lng": 68.762362, "ap": 0}, {"m": "махаллаи Хувайдуллоев", "h": "216/1", "c": 21, "fi": 6, "lat": 38.559978, "lng": 68.757859, "ap": 0}, {"m": "махаллаи Хувайдуллоев", "h": "137/1", "c": 3, "fi": 6, "lat": 38.560254, "lng": 68.755196, "ap": 0}, {"m": "махаллаи Хувайдуллоев", "h": "135", "c": 17, "fi": 6, "lat": 38.556831, "lng": 68.760406, "ap": 0}, {"m": "махаллаи Сино", "h": "137", "c": 108, "fi": 1, "lat": 38.53155, "lng": 68.760417, "ap": 0}, {"m": "махаллаи Сино", "h": "134", "c": 18, "fi": 1, "lat": 38.532067, "lng": 68.754139, "ap": 0}, {"m": "махаллаи Сино", "h": "128", "c": 63, "fi": 1, "lat": 38.529502, "lng": 68.757478, "ap": 0}, {"m": "махаллаи Шерализода", "h": "6//1", "c": 1, "fi": 17, "lat": 38.569028, "lng": 68.758303, "ap": 0}, {"m": "махаллаи Яккачинор", "h": "148/1", "c": 7, "fi": 16, "lat": 38.568248, "lng": 68.759947, "ap": 0}, {"m": "махаллаи Яккачинор", "h": "150/2", "c": 12, "fi": 16, "lat": 38.566201, "lng": 68.761273, "ap": 0}, {"m": "махаллаи Хувайдуллоев", "h": "113/3", "c": 57, "fi": 6, "lat": 38.564201, "lng": 68.759892, "ap": 0}, {"m": "махаллаи Шерализода", "h": "14//1", "c": 1, "fi": 17, "lat": 38.57119, "lng": 68.754265, "ap": 0}, {"m": "махаллаи Озодии Занон", "h": "", "c": 132, "fi": 15, "lat": 38.593996, "lng": 68.793258, "ap": 0}, {"m": "махаллаи Навбахор", "h": "", "c": 2, "fi": 31, "lat": 38.513052, "lng": 68.726715, "ap": 0}, {"m": "махаллаи Мухамадшохи Боло", "h": "", "c": 85, "fi": 0, "lat": 38.578193, "lng": 68.727095, "ap": 0}, {"m": "махаллаи Лаби толл", "h": "", "c": 3, "fi": 30, "lat": 38.552828, "lng": 68.756871, "ap": 1}, {"m": "махаллаи А.Навои", "h": "12", "c": 23, "fi": 19, "lat": 38.591946, "lng": 68.736602, "ap": 0}, {"m": "махаллаи А.Навои", "h": "12//2", "c": 46, "fi": 19, "lat": 38.591951, "lng": 68.735845, "ap": 0}, {"m": "махаллаи Чортути Боло", "h": "", "c": 41, "fi": 12, "lat": 38.560335, "lng": 68.724299, "ap": 0}, {"m": "махаллаи Чортути Поён", "h": "", "c": 171, "fi": 12, "lat": 38.561532, "lng": 68.724918, "ap": 0}, {"m": "махаллаи Шерализода", "h": "6//1", "c": 13, "fi": 17, "lat": 38.569028, "lng": 68.758303, "ap": 0}, {"m": "махаллаи Шерализода", "h": "4//1", "c": 7, "fi": 17, "lat": 38.569464, "lng": 68.758057, "ap": 0}, {"m": "махаллаи Мухаммадиев", "h": "14", "c": 77, "fi": 0, "lat": 38.576232, "lng": 68.723561, "ap": 0}, {"m": "махаллаи Мухаммадиев", "h": "16", "c": 68, "fi": 0, "lat": 38.572575, "lng": 68.734873, "ap": 0}, {"m": "махаллаи Мухаммадиев", "h": "24", "c": 50, "fi": 0, "lat": 38.570264, "lng": 68.730201, "ap": 0}, {"m": "махаллаи Мухаммадиев", "h": "18", "c": 47, "fi": 0, "lat": 38.575751, "lng": 68.725756, "ap": 0}, {"m": "махаллаи Мухаммадиев", "h": "26", "c": 65, "fi": 0, "lat": 38.576106, "lng": 68.727158, "ap": 0}, {"m": "махаллаи Мухаммадиев", "h": "20", "c": 55, "fi": 0, "lat": 38.578675, "lng": 68.7264, "ap": 0}, {"m": "махаллаи Сино блок Б-1", "h": "52", "c": 39, "fi": 1, "lat": 38.53032, "lng": 68.752462, "ap": 0}, {"m": "махаллаи Мухаммадиев", "h": "22", "c": 75, "fi": 0, "lat": 38.576973, "lng": 68.724268, "ap": 0}, {"m": "махаллаи Мухаммадиев", "h": "18", "c": 15, "fi": 0, "lat": 38.575751, "lng": 68.725756, "ap": 0}, {"m": "махаллаи Мухаммадиев", "h": "24", "c": 41, "fi": 0, "lat": 38.570264, "lng": 68.730201, "ap": 0}, {"m": "махаллаи Мухаммадиев", "h": "12", "c": 39, "fi": 0, "lat": 38.5753, "lng": 68.73398, "ap": 0}, {"m": "махаллаи Мухаммадиев", "h": "6", "c": 58, "fi": 0, "lat": 38.576627, "lng": 68.735594, "ap": 0}, {"m": "махаллаи Мухаммадиев", "h": "46", "c": 19, "fi": 0, "lat": 38.581402, "lng": 68.732304, "ap": 0}, {"m": "махаллаи Мухаммадиев", "h": "4", "c": 13, "fi": 0, "lat": 38.574692, "lng": 68.728881, "ap": 0}, {"m": "махаллаи Мухаммадиев", "h": "2", "c": 19, "fi": 0, "lat": 38.575655, "lng": 68.733964, "ap": 0}, {"m": "махаллаи Мухаммадиев", "h": "8", "c": 26, "fi": 0, "lat": 38.576446, "lng": 68.723471, "ap": 0}, {"m": "махаллаи Мухаммадиев", "h": "16", "c": 4, "fi": 0, "lat": 38.572575, "lng": 68.734873, "ap": 0}, {"m": "махаллаи Мухаммадиев", "h": "10", "c": 27, "fi": 0, "lat": 38.580549, "lng": 68.72909, "ap": 0}, {"m": "махаллаи Мухаммадиев", "h": "62", "c": 27, "fi": 0, "lat": 38.579359, "lng": 68.730468, "ap": 0}, {"m": "махаллаи Мухаммадиев", "h": "56", "c": 21, "fi": 0, "lat": 38.580705, "lng": 68.730427, "ap": 0}, {"m": "махаллаи Мухаммадиев", "h": "134", "c": 21, "fi": 0, "lat": 38.579072, "lng": 68.73266, "ap": 0}, {"m": "махаллаи Мухаммадиев", "h": "64", "c": 48, "fi": 0, "lat": 38.574579, "lng": 68.735059, "ap": 0}, {"m": "махаллаи Мухаммадиев", "h": "60", "c": 28, "fi": 0, "lat": 38.578912, "lng": 68.734688, "ap": 0}, {"m": "махаллаи Мухаммадиев", "h": "48", "c": 13, "fi": 0, "lat": 38.574299, "lng": 68.730906, "ap": 0}, {"m": "махаллаи Мухаммадиев", "h": "58", "c": 83, "fi": 0, "lat": 38.577888, "lng": 68.733715, "ap": 0}, {"m": "махаллаи Мухаммадиев", "h": "54", "c": 15, "fi": 0, "lat": 38.579735, "lng": 68.729523, "ap": 0}, {"m": "махаллаи Мухаммадиев", "h": "34", "c": 29, "fi": 0, "lat": 38.576121, "lng": 68.725916, "ap": 0}, {"m": "махаллаи Мухаммадиев", "h": "85", "c": 2, "fi": 0, "lat": 38.574883, "lng": 68.723857, "ap": 0}, {"m": "махаллаи Мухаммадиев", "h": "44", "c": 65, "fi": 0, "lat": 38.579865, "lng": 68.735071, "ap": 0}, {"m": "махаллаи Мухаммадиев", "h": "50", "c": 17, "fi": 0, "lat": 38.573884, "lng": 68.729793, "ap": 0}, {"m": "махаллаи Мухаммадиев", "h": "38", "c": 11, "fi": 0, "lat": 38.573415, "lng": 68.737257, "ap": 0}, {"m": "махаллаи Мухаммадиев", "h": "36", "c": 16, "fi": 0, "lat": 38.574018, "lng": 68.728989, "ap": 0}, {"m": "махаллаи Мухамадиев", "h": "70", "c": 99, "fi": 0, "lat": 38.577516, "lng": 68.728634, "ap": 0}, {"m": "махаллаи Мухамадиев", "h": "10", "c": 2, "fi": 0, "lat": 38.572396, "lng": 68.725429, "ap": 0}, {"m": "махаллаи Мухамадиев", "h": "44", "c": 27, "fi": 0, "lat": 38.577036, "lng": 68.737019, "ap": 0}, {"m": "махаллаи Мухамадиев", "h": "36", "c": 11, "fi": 0, "lat": 38.575429, "lng": 68.729756, "ap": 0}, {"m": "махаллаи Мухамадиев", "h": "38", "c": 14, "fi": 0, "lat": 38.577732, "lng": 68.731426, "ap": 0}, {"m": "махаллаи Мухамадиев", "h": "34", "c": 12, "fi": 0, "lat": 38.574037, "lng": 68.733012, "ap": 0}, {"m": "махаллаи Мухамадиев", "h": "14", "c": 4, "fi": 0, "lat": 38.575565, "lng": 68.727634, "ap": 0}, {"m": "махаллаи Мухамадиев", "h": "58", "c": 2, "fi": 0, "lat": 38.572478, "lng": 68.733067, "ap": 0}, {"m": "махаллаи Мухамадиев", "h": "56", "c": 9, "fi": 0, "lat": 38.575859, "lng": 68.72458, "ap": 0}, {"m": "махаллаи Мухамадиев", "h": "54", "c": 10, "fi": 0, "lat": 38.573928, "lng": 68.731482, "ap": 0}, {"m": "махаллаи Мухамадиев", "h": "48", "c": 11, "fi": 0, "lat": 38.572324, "lng": 68.735008, "ap": 0}, {"m": "махаллаи Нусратулло Махсум", "h": "103/1", "c": 8, "fi": 5, "lat": 38.579958, "lng": 68.731682, "ap": 0}, {"m": "махаллаи Нусратулло Махсум", "h": "103/2", "c": 3, "fi": 5, "lat": 38.586295, "lng": 68.729432, "ap": 0}, {"m": "махаллаи Нусратулло Махсум", "h": "103/3", "c": 11, "fi": 5, "lat": 38.583077, "lng": 68.723048, "ap": 0}, {"m": "махаллаи Нусратулло Махсум", "h": "105/4", "c": 17, "fi": 5, "lat": 38.58007, "lng": 68.732782, "ap": 0}, {"m": "махаллаи Нусратулло Махсум", "h": "105/1", "c": 29, "fi": 5, "lat": 38.583153, "lng": 68.733464, "ap": 0}, {"m": "махаллаи Нусратулло Махсум", "h": "105/3", "c": 20, "fi": 5, "lat": 38.585309, "lng": 68.727487, "ap": 0}, {"m": "махаллаи Нусратулло Махсум", "h": "105/2", "c": 24, "fi": 5, "lat": 38.576309, "lng": 68.727577, "ap": 0}, {"m": "махаллаи Нусратулло Махсум", "h": "113/2", "c": 19, "fi": 5, "lat": 38.578579, "lng": 68.731277, "ap": 0}, {"m": "махаллаи Нусратулло Махсум", "h": "113", "c": 17, "fi": 5, "lat": 38.581372, "lng": 68.725612, "ap": 0}, {"m": "махаллаи Нусратулло Махсум", "h": "113/1", "c": 11, "fi": 5, "lat": 38.577815, "lng": 68.731377, "ap": 0}, {"m": "махаллаи Нусратулло Махсум", "h": "95", "c": 18, "fi": 5, "lat": 38.579598, "lng": 68.726717, "ap": 0}, {"m": "махаллаи Нусратулло Махсум", "h": "95/2", "c": 17, "fi": 5, "lat": 38.583895, "lng": 68.727146, "ap": 0}, {"m": "махаллаи Нусратулло Махсум", "h": "95/3", "c": 19, "fi": 5, "lat": 38.577725, "lng": 68.730986, "ap": 0}, {"m": "махаллаи Нусратулло Махсум", "h": "95/1", "c": 14, "fi": 5, "lat": 38.577304, "lng": 68.726346, "ap": 0}, {"m": "махаллаи Нусратулло Махсум", "h": "113/3", "c": 1, "fi": 5, "lat": 38.581757, "lng": 68.732849, "ap": 0}, {"m": "махаллаи Нусратулло Махсум", "h": "105", "c": 15, "fi": 5, "lat": 38.578294, "lng": 68.727593, "ap": 0}, {"m": "махаллаи Нусратулло Махсум", "h": "111/3", "c": 28, "fi": 5, "lat": 38.575635, "lng": 68.72968, "ap": 0}, {"m": "махаллаи Нусратулло Махсум", "h": "105/2", "c": 1, "fi": 5, "lat": 38.576309, "lng": 68.727577, "ap": 0}, {"m": "махаллаи Нусратулло Махсум", "h": "111/1", "c": 23, "fi": 5, "lat": 38.582694, "lng": 68.732427, "ap": 0}, {"m": "махаллаи Нусратулло Махсум", "h": "111/2", "c": 1, "fi": 5, "lat": 38.580724, "lng": 68.731678, "ap": 0}, {"m": "махаллаи Нусратулло Махсум", "h": "103/2", "c": 4, "fi": 5, "lat": 38.586295, "lng": 68.729432, "ap": 0}, {"m": "махаллаи Нусратулло Махсум", "h": "103а", "c": 1, "fi": 5, "lat": 38.580703, "lng": 68.732514, "ap": 0}, {"m": "махаллаи Нусратулло Махсум", "h": "103", "c": 4, "fi": 5, "lat": 38.581343, "lng": 68.723316, "ap": 0}, {"m": "махаллаи Нусратулло Махсум", "h": "3а", "c": 19, "fi": 5, "lat": 38.581582, "lng": 68.725326, "ap": 0}, {"m": "махаллаи Испечак 1 м5", "h": "5", "c": 34, "fi": 4, "lat": 38.588403, "lng": 68.72657, "ap": 0}, {"m": "махаллаи Мухамадиев", "h": "20", "c": 8, "fi": 0, "lat": 38.57627, "lng": 68.726001, "ap": 0}, {"m": "махаллаи Мухамадиев", "h": "26", "c": 16, "fi": 0, "lat": 38.573839, "lng": 68.727777, "ap": 0}, {"m": "махаллаи Испечак 1 м4", "h": "8", "c": 7, "fi": 4, "lat": 38.58426, "lng": 68.735019, "ap": 0}, {"m": "махаллаи Испечак 1 м6", "h": "5", "c": 42, "fi": 4, "lat": 38.58709, "lng": 68.722812, "ap": 0}, {"m": "махаллаи Испечак 1 м6", "h": "4", "c": 20, "fi": 4, "lat": 38.580795, "lng": 68.732472, "ap": 0}, {"m": "махаллаи Испечак 1 м3", "h": "6", "c": 4, "fi": 4, "lat": 38.588524, "lng": 68.725749, "ap": 0}, {"m": "махаллаи Испечак 1 м5", "h": "1", "c": 9, "fi": 4, "lat": 38.588643, "lng": 68.723663, "ap": 0}, {"m": "махаллаи Испечак 1 м4", "h": "5", "c": 8, "fi": 4, "lat": 38.58564, "lng": 68.730145, "ap": 0}, {"m": "махаллаи Испечак 1 м3", "h": "6", "c": 14, "fi": 4, "lat": 38.588524, "lng": 68.725749, "ap": 0}, {"m": "махаллаи Испечак 1 м4", "h": "4", "c": 4, "fi": 4, "lat": 38.583196, "lng": 68.724547, "ap": 0}, {"m": "махаллаи Испечак 1 м6", "h": "7", "c": 9, "fi": 4, "lat": 38.58126, "lng": 68.732236, "ap": 0}, {"m": "махаллаи Испечак 1 м6", "h": "8", "c": 8, "fi": 4, "lat": 38.585856, "lng": 68.734609, "ap": 0}, {"m": "махаллаи Испечак 1 м6", "h": "6", "c": 5, "fi": 4, "lat": 38.586557, "lng": 68.724799, "ap": 0}, {"m": "махаллаи Испечак 1 м4", "h": "7", "c": 9, "fi": 4, "lat": 38.582245, "lng": 68.729048, "ap": 0}, {"m": "махаллаи Испечак 1 м1", "h": "8", "c": 16, "fi": 4, "lat": 38.581938, "lng": 68.726195, "ap": 0}, {"m": "махаллаи Испечак 1 м4", "h": "1", "c": 3, "fi": 4, "lat": 38.586464, "lng": 68.733772, "ap": 0}, {"m": "махаллаи Испечак 1 м4", "h": "3", "c": 7, "fi": 4, "lat": 38.58671, "lng": 68.7236, "ap": 0}, {"m": "махаллаи Испечак 1 м4", "h": "2", "c": 4, "fi": 4, "lat": 38.588785, "lng": 68.724791, "ap": 0}, {"m": "махаллаи Испечак 1 м4", "h": "6", "c": 8, "fi": 4, "lat": 38.58782, "lng": 68.725438, "ap": 0}, {"m": "махаллаи Испечак 1 м5", "h": "2", "c": 10, "fi": 4, "lat": 38.582675, "lng": 68.726588, "ap": 0}, {"m": "махаллаи Испечак 1 м5", "h": "3", "c": 13, "fi": 4, "lat": 38.587049, "lng": 68.722094, "ap": 0}, {"m": "махаллаи Испечак 1 м1", "h": "3", "c": 13, "fi": 4, "lat": 38.585829, "lng": 68.7242, "ap": 0}, {"m": "махаллаи Испечак 1 м1", "h": "4", "c": 14, "fi": 4, "lat": 38.581725, "lng": 68.731119, "ap": 0}, {"m": "махаллаи Испечак 1 м1", "h": "2", "c": 13, "fi": 4, "lat": 38.583722, "lng": 68.732537, "ap": 0}, {"m": "махаллаи Испечак 1 м1", "h": "1", "c": 8, "fi": 4, "lat": 38.585049, "lng": 68.728021, "ap": 0}, {"m": "махаллаи Испечак 1 м2", "h": "7", "c": 23, "fi": 4, "lat": 38.585215, "lng": 68.72714, "ap": 0}, {"m": "махаллаи Испечак 1 м2", "h": "6", "c": 19, "fi": 4, "lat": 38.582469, "lng": 68.732382, "ap": 0}, {"m": "махаллаи Испечак 1 м2", "h": "5", "c": 24, "fi": 4, "lat": 38.587777, "lng": 68.723197, "ap": 0}, {"m": "махаллаи Испечак 1 м3", "h": "5", "c": 22, "fi": 4, "lat": 38.582618, "lng": 68.730281, "ap": 0}, {"m": "махаллаи Испечак 1 м5", "h": "5", "c": 10, "fi": 4, "lat": 38.588403, "lng": 68.72657, "ap": 0}, {"m": "махаллаи Испечак 1 м3", "h": "1", "c": 11, "fi": 4, "lat": 38.585486, "lng": 68.732611, "ap": 0}, {"m": "махаллаи Испечак 1 м3", "h": "4", "c": 17, "fi": 4, "lat": 38.587027, "lng": 68.721772, "ap": 0}, {"m": "махаллаи Испечак 1 м3", "h": "3", "c": 12, "fi": 4, "lat": 38.589889, "lng": 68.723962, "ap": 0}, {"m": "махаллаи Испечак 1 м3", "h": "2", "c": 15, "fi": 4, "lat": 38.585712, "lng": 68.726146, "ap": 0}, {"m": "махаллаи Испечак 1 м6", "h": "3", "c": 3, "fi": 4, "lat": 38.580616, "lng": 68.728005, "ap": 0}, {"m": "махаллаи Испечак 1 м4", "h": "8", "c": 9, "fi": 4, "lat": 38.58426, "lng": 68.735019, "ap": 0}, {"m": "махаллаи Испечак 1 м2", "h": "4", "c": 5, "fi": 4, "lat": 38.588655, "lng": 68.726088, "ap": 0}, {"m": "махаллаи Испечак 1 м6", "h": "1", "c": 5, "fi": 4, "lat": 38.584339, "lng": 68.730727, "ap": 0}, {"m": "махаллаи Испечак 1 м6", "h": "2", "c": 6, "fi": 4, "lat": 38.582664, "lng": 68.727911, "ap": 0}, {"m": "махаллаи Испечак 1 м1", "h": "5", "c": 2, "fi": 4, "lat": 38.589543, "lng": 68.733406, "ap": 0}, {"m": "махаллаи Испечак 1 м2", "h": "1", "c": 29, "fi": 4, "lat": 38.582796, "lng": 68.721927, "ap": 0}, {"m": "махаллаи Испечак 1 м3", "h": "5", "c": 3, "fi": 4, "lat": 38.582618, "lng": 68.730281, "ap": 0}, {"m": "махаллаи Испечак 2 м2", "h": "2", "c": 2, "fi": 2, "lat": 38.581592, "lng": 68.730273, "ap": 0}, {"m": "махалаи Н.Махсум", "h": "8//2", "c": 77, "fi": 5, "lat": 38.576885, "lng": 68.726224, "ap": 0}, {"m": "махалаи Н.Махсум", "h": "12//2", "c": 25, "fi": 5, "lat": 38.582381, "lng": 68.733719, "ap": 0}, {"m": "махаллаи Испечак 2 м16", "h": "8", "c": 26, "fi": 2, "lat": 38.578288, "lng": 68.719081, "ap": 0}, {"m": "махаллаи Испечак 2 м16", "h": "1", "c": 9, "fi": 2, "lat": 38.584936, "lng": 68.727729, "ap": 0}, {"m": "махаллаи Испечак 2 м16", "h": "2", "c": 6, "fi": 2, "lat": 38.577325, "lng": 68.720451, "ap": 0}, {"m": "махаллаи Испечак 2 м16", "h": "3", "c": 3, "fi": 2, "lat": 38.579577, "lng": 68.718354, "ap": 0}, {"m": "махаллаи Испечак 2 м15", "h": "2", "c": 4, "fi": 2, "lat": 38.582872, "lng": 68.721401, "ap": 0}, {"m": "махаллаи Испечак 2 м16", "h": "7", "c": 8, "fi": 2, "lat": 38.585735, "lng": 68.721858, "ap": 0}, {"m": "махаллаи Испечак 2 м16", "h": "6", "c": 8, "fi": 2, "lat": 38.580566, "lng": 68.726927, "ap": 0}, {"m": "махаллаи Испечак 2 м13", "h": "6", "c": 14, "fi": 2, "lat": 38.577653, "lng": 68.723076, "ap": 0}, {"m": "махаллаи Испечак 2 м12", "h": "5", "c": 2, "fi": 2, "lat": 38.584717, "lng": 68.729513, "ap": 0}, {"m": "махаллаи Испечак 2 м12", "h": "3", "c": 1, "fi": 2, "lat": 38.576894, "lng": 68.72581, "ap": 0}, {"m": "махаллаи Испечак 2 м14", "h": "1", "c": 25, "fi": 2, "lat": 38.580063, "lng": 68.724908, "ap": 0}, {"m": "махаллаи Испечак 2 м13", "h": "5", "c": 13, "fi": 2, "lat": 38.582396, "lng": 68.719168, "ap": 0}, {"m": "махаллаи Испечак 2 м12", "h": "4", "c": 6, "fi": 2, "lat": 38.578934, "lng": 68.726662, "ap": 0}, {"m": "махаллаи Испечак 2 м22", "h": "5", "c": 13, "fi": 2, "lat": 38.581622, "lng": 68.728853, "ap": 0}, {"m": "махаллаи Испечак 2 м13", "h": "5", "c": 2, "fi": 2, "lat": 38.582396, "lng": 68.719168, "ap": 0}, {"m": "махаллаи Испечак 2 м14", "h": "3", "c": 4, "fi": 2, "lat": 38.584341, "lng": 68.719871, "ap": 0}, {"m": "махаллаи Испечак 2 м14", "h": "4", "c": 3, "fi": 2, "lat": 38.57917, "lng": 68.725169, "ap": 0}, {"m": "махаллаи Испечак 2 м14", "h": "5", "c": 0, "fi": 2, "lat": 38.582117, "lng": 68.731156, "ap": 0}, {"m": "махаллаи Испечак 2 м22", "h": "1", "c": 3, "fi": 2, "lat": 38.578631, "lng": 68.729646, "ap": 0}, {"m": "махаллаи Испечак 2 м22", "h": "3", "c": 10, "fi": 2, "lat": 38.586869, "lng": 68.722349, "ap": 0}, {"m": "махаллаи Испечак 2 м21", "h": "8", "c": 2, "fi": 2, "lat": 38.581075, "lng": 68.725217, "ap": 0}, {"m": "махаллаи Испечак 2 м21", "h": "7", "c": 2, "fi": 2, "lat": 38.584945, "lng": 68.726847, "ap": 0}, {"m": "махаллаи Испечак 2 м21", "h": "6", "c": 4, "fi": 2, "lat": 38.583414, "lng": 68.71745, "ap": 0}, {"m": "махаллаи Испечак 2 м22", "h": "1", "c": 1, "fi": 2, "lat": 38.578631, "lng": 68.729646, "ap": 0}, {"m": "махаллаи Испечак 2 м19", "h": "1", "c": 18, "fi": 2, "lat": 38.586017, "lng": 68.728855, "ap": 0}, {"m": "махаллаи Испечак 2 м19", "h": "2", "c": 16, "fi": 2, "lat": 38.584218, "lng": 68.717839, "ap": 0}, {"m": "махаллаи Испечак 2 м23", "h": "5", "c": 16, "fi": 2, "lat": 38.582518, "lng": 68.723457, "ap": 0}, {"m": "махаллаи Испечак 2 м23", "h": "6", "c": 12, "fi": 2, "lat": 38.579656, "lng": 68.725447, "ap": 0}, {"m": "махаллаи Испечак 2 м22", "h": "4", "c": 19, "fi": 2, "lat": 38.578029, "lng": 68.720577, "ap": 0}, {"m": "махаллаи Испечак 2 м14", "h": "6", "c": 2, "fi": 2, "lat": 38.581962, "lng": 68.729181, "ap": 0}, {"m": "махаллаи Испечак 2 м14", "h": "7", "c": 10, "fi": 2, "lat": 38.579165, "lng": 68.72879, "ap": 0}, {"m": "махаллаи Испечак 2 м14", "h": "2", "c": 5, "fi": 2, "lat": 38.577067, "lng": 68.725865, "ap": 0}, {"m": "Махаллаи Испечак 2 м22", "h": "2", "c": 10, "fi": 2, "lat": 38.586073, "lng": 68.725298, "ap": 0}, {"m": "махаллаи Н.Махсум", "h": "8//4", "c": 68, "fi": 5, "lat": 38.581634, "lng": 68.730684, "ap": 0}, {"m": "махаллаи Испечак 2 м27", "h": "1", "c": 2, "fi": 2, "lat": 38.582, "lng": 68.725298, "ap": 0}, {"m": "махаллаи Испечак 2 м27", "h": "3", "c": 10, "fi": 2, "lat": 38.580688, "lng": 68.727205, "ap": 0}, {"m": "махаллаи Испечак 2 м25", "h": "5", "c": 14, "fi": 2, "lat": 38.581992, "lng": 68.718239, "ap": 0}, {"m": "махаллаи Испечак 2 м18", "h": "1", "c": 16, "fi": 2, "lat": 38.587378, "lng": 68.72442, "ap": 0}, {"m": "махаллаи Испечак 2 м12", "h": "3", "c": 2, "fi": 2, "lat": 38.576894, "lng": 68.72581, "ap": 0}, {"m": "Махаллаи Испечак 2 м12", "h": "1", "c": 7, "fi": 2, "lat": 38.585999, "lng": 68.718513, "ap": 0}, {"m": "махаллаи Испечак 2 м26", "h": "7", "c": 7, "fi": 2, "lat": 38.58153, "lng": 68.72081, "ap": 0}, {"m": "махаллаи Испечак 2 м18", "h": "2", "c": 8, "fi": 2, "lat": 38.578439, "lng": 68.722262, "ap": 0}, {"m": "махаллаи Испечак 2 м24", "h": "1", "c": 4, "fi": 2, "lat": 38.581181, "lng": 68.716742, "ap": 0}, {"m": "махаллаи Испечак 2 м25", "h": "1", "c": 5, "fi": 2, "lat": 38.583021, "lng": 68.721392, "ap": 0}, {"m": "махаллаи Испечак 2 м25", "h": "5", "c": 39, "fi": 2, "lat": 38.581992, "lng": 68.718239, "ap": 0}, {"m": "махаллаи Испечак 2 м12", "h": "5", "c": 1, "fi": 2, "lat": 38.584717, "lng": 68.729513, "ap": 0}, {"m": "махаллаи Испечак 2 м27", "h": "5", "c": 6, "fi": 2, "lat": 38.580714, "lng": 68.725816, "ap": 0}, {"m": "махаллаи Испечак 2 м27", "h": "4", "c": 6, "fi": 2, "lat": 38.587706, "lng": 68.724485, "ap": 0}, {"m": "махаллаи Испечак 2 м18", "h": "2", "c": 1, "fi": 2, "lat": 38.578439, "lng": 68.722262, "ap": 0}, {"m": "махаллаи Испечак 2 м18", "h": "3", "c": 6, "fi": 2, "lat": 38.581881, "lng": 68.717718, "ap": 0}, {"m": "махаллаи Испечак 2 м18", "h": "4", "c": 9, "fi": 2, "lat": 38.576462, "lng": 68.722701, "ap": 0}, {"m": "махаллаи Испечак 2 м18", "h": "5", "c": 8, "fi": 2, "lat": 38.582817, "lng": 68.725974, "ap": 0}, {"m": "махаллаи Испечак 2 м18", "h": "6", "c": 13, "fi": 2, "lat": 38.586, "lng": 68.720883, "ap": 0}, {"m": "махаллаи Испечак 2 м28", "h": "3", "c": 9, "fi": 2, "lat": 38.579166, "lng": 68.720389, "ap": 0}, {"m": "махаллаи Испечак 2 м28", "h": "6", "c": 7, "fi": 2, "lat": 38.582175, "lng": 68.725229, "ap": 0}, {"m": "махаллаи Испечак 2 м28", "h": "2", "c": 13, "fi": 2, "lat": 38.585996, "lng": 68.718633, "ap": 0}, {"m": "махаллаи Испечак 2 м28", "h": "1", "c": 9, "fi": 2, "lat": 38.58718, "lng": 68.723844, "ap": 0}, {"m": "махаллаи Испечак 2 м28", "h": "4", "c": 12, "fi": 2, "lat": 38.579699, "lng": 68.724043, "ap": 0}, {"m": "махаллаи Испечак 2 м20", "h": "4", "c": 13, "fi": 2, "lat": 38.581507, "lng": 68.724432, "ap": 0}, {"m": "махаллаи Испечак 2 м20", "h": "3", "c": 5, "fi": 2, "lat": 38.584672, "lng": 68.725116, "ap": 0}, {"m": "махаллаи Испечак 2 м31", "h": "1", "c": 3, "fi": 2, "lat": 38.584091, "lng": 68.717159, "ap": 0}, {"m": "махаллаи Испечак 2 м30", "h": "4", "c": 12, "fi": 2, "lat": 38.582691, "lng": 68.721748, "ap": 0}, {"m": "махаллаи Испечак 2 м30", "h": "5", "c": 1, "fi": 2, "lat": 38.584006, "lng": 68.720218, "ap": 0}, {"m": "махаллаи Испечак 2 м20", "h": "1", "c": 2, "fi": 2, "lat": 38.586704, "lng": 68.723668, "ap": 0}, {"m": "махаллаи Испечак 2 м31", "h": "2", "c": 2, "fi": 2, "lat": 38.580836, "lng": 68.72484, "ap": 0}, {"m": "махаллаи Испечак 2", "h": "30//1", "c": 17, "fi": 2, "lat": 38.584199, "lng": 68.722196, "ap": 0}, {"m": "махаллаи Испечак 2", "h": "33", "c": 16, "fi": 2, "lat": 38.578289, "lng": 68.721192, "ap": 0}, {"m": "махаллаи Испечак 2 м25", "h": "5", "c": 10, "fi": 2, "lat": 38.581992, "lng": 68.718239, "ap": 0}, {"m": "махаллаи Испечак 2 м24", "h": "3", "c": 12, "fi": 2, "lat": 38.581198, "lng": 68.728854, "ap": 0}, {"m": "махаллаи Испечак 2 м24", "h": "4", "c": 11, "fi": 2, "lat": 38.582578, "lng": 68.720711, "ap": 0}, {"m": "махаллаи Испечак 2 м28", "h": "5", "c": 2, "fi": 2, "lat": 38.580512, "lng": 68.71781, "ap": 0}, {"m": "махаллаи Испечак 2 м24", "h": "5", "c": 7, "fi": 2, "lat": 38.584136, "lng": 68.722607, "ap": 0}, {"m": "махаллаи Испечак 2 м30", "h": "8", "c": 2, "fi": 2, "lat": 38.584064, "lng": 68.725566, "ap": 0}, {"m": "махаллаи Испечак 2 м30", "h": "3", "c": 3, "fi": 2, "lat": 38.584622, "lng": 68.719715, "ap": 0}, {"m": "махаллаи Испечак 2 м30", "h": "6", "c": 25, "fi": 2, "lat": 38.58582, "lng": 68.72284, "ap": 0}, {"m": "махаллаи Испечак 2 м31", "h": "4", "c": 14, "fi": 2, "lat": 38.580266, "lng": 68.724462, "ap": 0}, {"m": "махаллаи Испечак 2 м26", "h": "8", "c": 8, "fi": 2, "lat": 38.585395, "lng": 68.724057, "ap": 0}, {"m": "махаллаи Испечак 2 м25", "h": "3", "c": 1, "fi": 2, "lat": 38.576542, "lng": 68.723281, "ap": 0}, {"m": "махаллаи Испечак 2 м26", "h": "9", "c": 9, "fi": 2, "lat": 38.577446, "lng": 68.727193, "ap": 0}, {"m": "махаллаи Испечак 2", "h": "33", "c": 1, "fi": 2, "lat": 38.578289, "lng": 68.721192, "ap": 0}, {"m": "махаллаи Испечак 2 м31", "h": "6", "c": 4, "fi": 2, "lat": 38.581085, "lng": 68.722894, "ap": 0}, {"m": "махаллаи Испечак 2 м32", "h": "2", "c": 11, "fi": 2, "lat": 38.584138, "lng": 68.7246, "ap": 0}, {"m": "махаллаи Испечак 2 м30", "h": "10", "c": 4, "fi": 2, "lat": 38.585741, "lng": 68.719504, "ap": 0}, {"m": "махаллаи Испечак 2 м30", "h": "9", "c": 4, "fi": 2, "lat": 38.577839, "lng": 68.722767, "ap": 0}, {"m": "махаллаи Испечак 2 м32", "h": "5", "c": 8, "fi": 2, "lat": 38.583546, "lng": 68.719987, "ap": 0}, {"m": "махаллаи Испечак 2 м32", "h": "4", "c": 5, "fi": 2, "lat": 38.58542, "lng": 68.722226, "ap": 0}, {"m": "махаллаи Испечак 2 м32", "h": "3", "c": 6, "fi": 2, "lat": 38.581676, "lng": 68.718826, "ap": 0}, {"m": "махаллаи Испечак 2 м32", "h": "1", "c": 5, "fi": 2, "lat": 38.576948, "lng": 68.724945, "ap": 0}, {"m": "махаллаи Испечак 2 м13", "h": "2", "c": 8, "fi": 2, "lat": 38.584368, "lng": 68.719836, "ap": 0}, {"m": "махаллаи Испечак 2 м13", "h": "4", "c": 9, "fi": 2, "lat": 38.584097, "lng": 68.722708, "ap": 0}, {"m": "махаллаи Испечак 2 м13", "h": "1", "c": 5, "fi": 2, "lat": 38.582441, "lng": 68.723942, "ap": 0}, {"m": "махаллаи Испечак 2", "h": "30//1", "c": 10, "fi": 2, "lat": 38.584199, "lng": 68.722196, "ap": 0}, {"m": "махаллаи Испечак 2 м26", "h": "2", "c": 18, "fi": 2, "lat": 38.584635, "lng": 68.723399, "ap": 0}, {"m": "махаллаи Испечак 2 м26", "h": "5", "c": 3, "fi": 2, "lat": 38.581391, "lng": 68.721694, "ap": 0}, {"m": "махаллаи Испечак 2 м21", "h": "6", "c": 2, "fi": 2, "lat": 38.583414, "lng": 68.71745, "ap": 0}, {"m": "махаллаи Испечак 2 м26", "h": "3", "c": 9, "fi": 2, "lat": 38.57801, "lng": 68.719025, "ap": 0}, {"m": "махаллаи Испечак 2 м26", "h": "4", "c": 5, "fi": 2, "lat": 38.579712, "lng": 68.718427, "ap": 0}, {"m": "махаллаи Испечак 2 м25", "h": "6", "c": 0, "fi": 2, "lat": 38.587294, "lng": 68.727262, "ap": 0}, {"m": "махаллаи Испечак 2 м25", "h": "2", "c": 3, "fi": 2, "lat": 38.583475, "lng": 68.727336, "ap": 0}, {"m": "махаллаи Испечак 2 м25", "h": "3", "c": 1, "fi": 2, "lat": 38.576542, "lng": 68.723281, "ap": 0}, {"m": "махаллаи Испечак 2 м25", "h": "4", "c": 10, "fi": 2, "lat": 38.578477, "lng": 68.718209, "ap": 0}, {"m": "махаллаи Испечак 2 м23", "h": "3", "c": 1, "fi": 2, "lat": 38.578342, "lng": 68.725024, "ap": 0}, {"m": "махаллаи Испечак 2 м23", "h": "4", "c": 9, "fi": 2, "lat": 38.577946, "lng": 68.72836, "ap": 0}, {"m": "махаллаи Испечак 2 м23", "h": "1", "c": 4, "fi": 2, "lat": 38.585004, "lng": 68.724972, "ap": 0}, {"m": "махаллаи Испечак 2 м26", "h": "7", "c": 1, "fi": 2, "lat": 38.58153, "lng": 68.72081, "ap": 0}, {"m": "махаллаи Испечак 2 м28", "h": "7", "c": 30, "fi": 2, "lat": 38.587716, "lng": 68.724214, "ap": 0}, {"m": "махаллаи Испечак 2 м18", "h": "3", "c": 0, "fi": 2, "lat": 38.581881, "lng": 68.717718, "ap": 0}, {"m": "махаллаи Испечак 2 м24", "h": "6", "c": 5, "fi": 2, "lat": 38.58342, "lng": 68.719353, "ap": 0}, {"m": "махаллаи Испечак 2 м26", "h": "6", "c": 2, "fi": 2, "lat": 38.581845, "lng": 68.72477, "ap": 0}, {"m": "махаллаи Испечак 2 м23", "h": "2", "c": 6, "fi": 2, "lat": 38.586432, "lng": 68.718814, "ap": 0}, {"m": "махаллаи Испечак 2 м12", "h": "3", "c": 2, "fi": 2, "lat": 38.576894, "lng": 68.72581, "ap": 0}, {"m": "махаллаи Зарафшон м2", "h": "5", "c": 26, "fi": 3, "lat": 38.577869, "lng": 68.708189, "ap": 0}, {"m": "махаллаи Зарафшон м1", "h": "5", "c": 8, "fi": 3, "lat": 38.575899, "lng": 68.702017, "ap": 0}, {"m": "махаллаи Зарафшон м2", "h": "1", "c": 8, "fi": 3, "lat": 38.574992, "lng": 68.703956, "ap": 0}, {"m": "махаллаи Зарафшон м3", "h": "2", "c": 11, "fi": 3, "lat": 38.580946, "lng": 68.700892, "ap": 0}, {"m": "махаллаи Зарафшон 1 м1", "h": "10", "c": 1, "fi": 3, "lat": 38.579327, "lng": 68.702084, "ap": 0}, {"m": "махаллаи Испечак 2 м26", "h": "5", "c": 3, "fi": 2, "lat": 38.581391, "lng": 68.721694, "ap": 0}, {"m": "махаллаи Испечак 2", "h": "4", "c": 2, "fi": 2, "lat": 38.580217, "lng": 68.723527, "ap": 0}, {"m": "махаллаи Зарафшон м1", "h": "8", "c": 3, "fi": 3, "lat": 38.579805, "lng": 68.702681, "ap": 0}, {"m": "махаллаи Зарафшон м1", "h": "7", "c": 10, "fi": 3, "lat": 38.583506, "lng": 68.707227, "ap": 0}, {"m": "махаллаи Зарафшон м1", "h": "1", "c": 9, "fi": 3, "lat": 38.583703, "lng": 68.709629, "ap": 0}, {"m": "махаллаи Зарафшон м2", "h": "2", "c": 17, "fi": 3, "lat": 38.581759, "lng": 68.699333, "ap": 0}, {"m": "махаллаи Зарафшон м2", "h": "4", "c": 10, "fi": 3, "lat": 38.584193, "lng": 68.708532, "ap": 0}, {"m": "махаллаи Зарафшон м1", "h": "10", "c": 26, "fi": 3, "lat": 38.580928, "lng": 68.705256, "ap": 0}, {"m": "махаллаи Зарафшон м1", "h": "2", "c": 3, "fi": 3, "lat": 38.580164, "lng": 68.706966, "ap": 0}, {"m": "махаллаи Зарафшон м1", "h": "9", "c": 4, "fi": 3, "lat": 38.578833, "lng": 68.700352, "ap": 0}, {"m": "махаллаи Зарафшон 2", "h": "1", "c": 5, "fi": 23, "lat": 38.58405, "lng": 68.704431, "ap": 0}, {"m": "махаллаи Зарафшон м2", "h": "8", "c": 11, "fi": 3, "lat": 38.574862, "lng": 68.703504, "ap": 0}, {"m": "махаллаи Зарафшон м1", "h": "5", "c": 8, "fi": 3, "lat": 38.575899, "lng": 68.702017, "ap": 0}, {"m": "махаллаи Зарафшон 2", "h": "3", "c": 2, "fi": 23, "lat": 38.583716, "lng": 68.701067, "ap": 0}, {"m": "махаллаи Зарафшон м1", "h": "6", "c": 3, "fi": 3, "lat": 38.576722, "lng": 68.701203, "ap": 0}, {"m": "махаллаи Зарафшон м1", "h": "4", "c": 3, "fi": 3, "lat": 38.58534, "lng": 68.703838, "ap": 0}, {"m": "махаллаи Зарафшон м3", "h": "1", "c": 9, "fi": 3, "lat": 38.581889, "lng": 68.698073, "ap": 0}, {"m": "махаллаи Зарафшон м2", "h": "27", "c": 2, "fi": 3, "lat": 38.58367, "lng": 68.70897, "ap": 0}, {"m": "махаллаи Зарафшон м5", "h": "7", "c": 11, "fi": 3, "lat": 38.581144, "lng": 68.698183, "ap": 0}, {"m": "махаллаи Зарафшон м2", "h": "7", "c": 1, "fi": 3, "lat": 38.581402, "lng": 68.703382, "ap": 0}, {"m": "махаллаи Зарафшон м5", "h": "8", "c": 5, "fi": 3, "lat": 38.57913, "lng": 68.710357, "ap": 0}, {"m": "махаллаи Зарафшон м2", "h": "10", "c": 4, "fi": 3, "lat": 38.578666, "lng": 68.706928, "ap": 0}, {"m": "махаллаи Зарафшон 2", "h": "7", "c": 2, "fi": 23, "lat": 38.586387, "lng": 68.700589, "ap": 0}, {"m": "махаллаи Зарафшон м1", "h": "10", "c": 19, "fi": 3, "lat": 38.580928, "lng": 68.705256, "ap": 0}, {"m": "махаллаи Зарафшон 2", "h": "38", "c": 1, "fi": 23, "lat": 38.582843, "lng": 68.703625, "ap": 0}, {"m": "махаллаи Зарафшон м5", "h": "9", "c": 12, "fi": 3, "lat": 38.580221, "lng": 68.708134, "ap": 0}, {"m": "махаллаи Зарафшон м2", "h": "5", "c": 2, "fi": 3, "lat": 38.577869, "lng": 68.708189, "ap": 0}, {"m": "махаллаи Зарафшон м5", "h": "11", "c": 1, "fi": 3, "lat": 38.577693, "lng": 68.702279, "ap": 0}, {"m": "махаллаи Зарафшон м5", "h": "1", "c": 9, "fi": 3, "lat": 38.57525, "lng": 68.703236, "ap": 0}, {"m": "махаллаи Зарафшон м5", "h": "2", "c": 15, "fi": 3, "lat": 38.580928, "lng": 68.701036, "ap": 0}, {"m": "махаллаи Зарафшон м4", "h": "5", "c": 53, "fi": 3, "lat": 38.585102, "lng": 68.707419, "ap": 0}, {"m": "махаллаи Сино", "h": "42", "c": 33, "fi": 1, "lat": 38.529435, "lng": 68.758999, "ap": 0}, {"m": "махаллаи Зарафшон", "h": "5", "c": 13, "fi": 3, "lat": 38.576009, "lng": 68.705636, "ap": 0}, {"m": "махаллаи Зарафшон 1м5", "h": "2", "c": 2, "fi": 3, "lat": 38.580649, "lng": 68.697279, "ap": 0}, {"m": "махаллаи Зарафшон м5", "h": "12", "c": 1, "fi": 3, "lat": 38.575637, "lng": 68.703956, "ap": 0}, {"m": "махаллаи Зарафшон м5", "h": "3", "c": 9, "fi": 3, "lat": 38.583031, "lng": 68.711004, "ap": 0}, {"m": "махаллаи Зарафшон м5", "h": "5", "c": 15, "fi": 3, "lat": 38.578503, "lng": 68.70686, "ap": 0}, {"m": "махаллаи Зарафшон м5", "h": "6", "c": 18, "fi": 3, "lat": 38.581586, "lng": 68.704066, "ap": 0}, {"m": "махаллаи Зарафшон м5", "h": "4", "c": 5, "fi": 3, "lat": 38.582697, "lng": 68.706428, "ap": 0}, {"m": "махаллаи Зарафшон м4", "h": "2", "c": 34, "fi": 3, "lat": 38.581085, "lng": 68.698507, "ap": 0}, {"m": "махаллаи Зарафшон м4", "h": "3", "c": 7, "fi": 3, "lat": 38.577154, "lng": 68.701052, "ap": 0}, {"m": "махаллаи Зарафшон м4", "h": "8", "c": 5, "fi": 3, "lat": 38.576656, "lng": 68.703636, "ap": 0}, {"m": "махаллаи Зарафшон", "h": "22//9", "c": 32, "fi": 3, "lat": 38.578985, "lng": 68.707229, "ap": 0}, {"m": "махаллаи Зарафшон", "h": "22//10", "c": 15, "fi": 3, "lat": 38.582296, "lng": 68.7101, "ap": 0}, {"m": "махаллаи Зарафшон", "h": "4", "c": 17, "fi": 3, "lat": 38.577698, "lng": 68.710878, "ap": 0}, {"m": "махаллаи Зарафшон", "h": "2", "c": 16, "fi": 3, "lat": 38.581525, "lng": 68.711609, "ap": 0}, {"m": "махаллаи Испечак 2м13", "h": "6", "c": 5, "fi": 2, "lat": 38.584707, "lng": 68.726182, "ap": 0}, {"m": "махаллаи Зарафшон м4", "h": "10", "c": 7, "fi": 3, "lat": 38.580986, "lng": 68.702425, "ap": 0}, {"m": "махаллаи Зарафшон м4", "h": "7", "c": 11, "fi": 3, "lat": 38.583063, "lng": 68.703113, "ap": 0}, {"m": "махаллаи Зарафшон м4", "h": "9", "c": 3, "fi": 3, "lat": 38.577451, "lng": 68.700115, "ap": 0}, {"m": "махаллаи Зарафшон м2", "h": "9", "c": 9, "fi": 3, "lat": 38.585387, "lng": 68.701984, "ap": 0}, {"m": "махаллаи Зарафшон м4", "h": "4", "c": 11, "fi": 3, "lat": 38.57474, "lng": 68.705651, "ap": 0}, {"m": "махаллаи Зарафшон м4", "h": "5", "c": 7, "fi": 3, "lat": 38.585102, "lng": 68.707419, "ap": 0}, {"m": "махаллаи Испечак 2м20", "h": "2", "c": 5, "fi": 2, "lat": 38.581082, "lng": 68.721596, "ap": 0}, {"m": "махаллаи Испечак 2м12", "h": "9", "c": 1, "fi": 2, "lat": 38.584863, "lng": 68.72035, "ap": 0}, {"m": "махаллаи Испечак 2м27", "h": "2", "c": 4, "fi": 2, "lat": 38.585965, "lng": 68.727653, "ap": 0}, {"m": "махаллаи Зарафшон 1//7", "h": "", "c": 2, "fi": 3, "lat": 38.581876, "lng": 68.698987, "ap": 0}, {"m": "махаллаи Зарафшон 22//8", "h": "", "c": 2, "fi": 23, "lat": 38.586527, "lng": 68.700906, "ap": 0}, {"m": "махаллаи Зарафшон м210", "h": "", "c": 1, "fi": 3, "lat": 38.582103, "lng": 68.707458, "ap": 0}, {"m": "махаллаи Испечак 2м18", "h": "7", "c": 3, "fi": 2, "lat": 38.582832, "lng": 68.717774, "ap": 0}, {"m": "махаллаи Зарафшон 2", "h": "6", "c": 0, "fi": 23, "lat": 38.581864, "lng": 68.698089, "ap": 0}, {"m": "махаллаи Испечак 2м31", "h": "5", "c": 3, "fi": 2, "lat": 38.586536, "lng": 68.719733, "ap": 0}, {"m": "махаллаи Зарафшон 2", "h": "22//8", "c": 10, "fi": 23, "lat": 38.585672, "lng": 68.701519, "ap": 0}, {"m": "махаллаи Зарафшон 2", "h": "22//6", "c": 3, "fi": 23, "lat": 38.582567, "lng": 68.698688, "ap": 0}, {"m": "махаллаи Испечак 2м24", "h": "2", "c": 3, "fi": 2, "lat": 38.583319, "lng": 68.720829, "ap": 0}, {"m": "махаллаи Испечак 2м31", "h": "6", "c": 4, "fi": 2, "lat": 38.579443, "lng": 68.720996, "ap": 0}, {"m": "махаллаи Зарафшон", "h": "22//7", "c": 28, "fi": 3, "lat": 38.584074, "lng": 68.70124, "ap": 0}, {"m": "махаллаи Испечак 2м18", "h": "7", "c": 1, "fi": 2, "lat": 38.582832, "lng": 68.717774, "ap": 0}, {"m": "махаллаи Испечак 2м31", "h": "5", "c": 2, "fi": 2, "lat": 38.586536, "lng": 68.719733, "ap": 0}, {"m": "махаллаи Испечак 2м31", "h": "6", "c": 1, "fi": 2, "lat": 38.579443, "lng": 68.720996, "ap": 0}, {"m": "махаллаи Сино Б-1", "h": "52", "c": 53, "fi": 1, "lat": 38.529403, "lng": 68.751404, "ap": 0}, {"m": "махаллаи Зарафшон 2", "h": "22//5", "c": 8, "fi": 23, "lat": 38.582878, "lng": 68.704461, "ap": 0}, {"m": "махаллаи Зарафшон м1", "h": "1", "c": 5, "fi": 3, "lat": 38.583703, "lng": 68.709629, "ap": 0}, {"m": "махаллаи Зарафшон м1", "h": "2", "c": 5, "fi": 3, "lat": 38.580164, "lng": 68.706966, "ap": 0}, {"m": "махаллаи Зарафшон 2", "h": "22//5", "c": 3, "fi": 23, "lat": 38.582878, "lng": 68.704461, "ap": 0}, {"m": "махаллаи Зарафшон 2", "h": "22//4", "c": 11, "fi": 23, "lat": 38.58538, "lng": 68.699895, "ap": 0}, {"m": "махаллаи Зарафшон 2", "h": "22//10", "c": 2, "fi": 23, "lat": 38.584308, "lng": 68.703398, "ap": 0}, {"m": "махаллаи Зарафшон м1", "h": "99", "c": 1, "fi": 3, "lat": 38.58251, "lng": 68.705801, "ap": 0}, {"m": "махаллаи Зарафшон м1", "h": "10", "c": 1, "fi": 3, "lat": 38.580928, "lng": 68.705256, "ap": 0}, {"m": "махаллаи Зарафшон 2", "h": "22//6", "c": 1, "fi": 23, "lat": 38.582567, "lng": 68.698688, "ap": 0}, {"m": "махаллаи Испечак 2м12", "h": "5", "c": 4, "fi": 2, "lat": 38.579056, "lng": 68.729181, "ap": 0}, {"m": "махаллаи Испечак 2м15", "h": "1", "c": 1, "fi": 2, "lat": 38.585107, "lng": 68.718438, "ap": 0}];
+/* ═════════════════════════════════════════════════════════════════════════ */
+
+/* Большие антенны (вышки) — точные координаты; адреса подтянуты из OpenStreetMap */
+/* Confirmed source corrections: two embedded house numbers and four missing/zero counts. */
+const movedHouse1 = REGISTRY.find((r) => r.m === "махаллаи Зарафшон 1//7" && !r.h);
+if (movedHouse1) Object.assign(movedHouse1, { m: "махаллаи Зарафшон", h: "1//7", fi: 3 });
+const movedHouse2 = REGISTRY.find((r) => r.m === "махаллаи Зарафшон 22//8" && !r.h);
+if (movedHouse2) Object.assign(movedHouse2, { m: "махаллаи Зарафшон", h: "22//8", fi: 3 });
+REGISTRY.forEach((r) => { if (!(r.c > 0)) r.c = 1; });
+FAMILIES.forEach((f, i) => {
+  const rows = REGISTRY.filter((r) => r.fi === i);
+  f.rows = rows.length;
+  f.count = rows.reduce((sum, r) => sum + r.c, 0);
+});
+
+const HUBS = [
+  { lat: 38.583123, lng: 68.732282, addr: "проспект Нусратулло Махсум", area: "Хуснообод · район Сино", name: "Gateway_FBE3AF", gatewayId: "24E124FFFEFBE3AE" },
+  { lat: 38.580183, lng: 68.729155, addr: "ул. Нусратулло Максума, 105/5", area: "102-й микрорайон · район Сино", name: "Gateway_FBE25F", gatewayId: "24E124FFFEFBE25E" },
+  { lat: 38.561839, lng: 68.754215, addr: "проспект Саади Шерози, 37/4", area: "14-й микрорайон · район Сино", name: "Gateway_FBE43D", gatewayId: "24E124FFFEFBE43C" },
+  { lat: 38.562181, lng: 68.755813, addr: "проспект Абуали Сино, 128/1", area: "12-й микрорайон · район Сино", name: "Gateway_FBE409", gatewayId: "24E124FFFEFBE408" },
+  { lat: 38.513274, lng: 68.701453, addr: "юго-западная окраина", area: "район Сино", name: "Gateway_FBE361", gatewayId: "24E124FFFEFBE360" },
+  { lat: 38.633917, lng: 68.769574, addr: "ул. Худжамбиёи Боло · Кушониён", area: "район Исмоили Сомони", name: "Gateway_FBE237", gatewayId: "24E124FFFEFBE236" },
+  { lat: 38.646505, lng: 68.769054, addr: "проспект Рудаки (север)", area: "район Исмоили Сомони", name: "Gateway_FBE36F", gatewayId: "24E124FFFEFBE36E" },
+  { lat: 38.592637, lng: 68.755212, addr: "91-й микрорайон", area: "район Сино", name: "Gateway_FBE239", gatewayId: "24E124FFFEFBE238" },
+];
+HUBS.forEach((hub, i) => {
+  hub.color = ASSIGNMENT_DATA.colors[i];
+  hub.capacity = ASSIGNMENT_DATA.gatewayModules[i].length;
+});
+const HUB_RADIUS_M = 9000;
+/* подпись вышки: точное имя из реестра uMap */
+const hubName = (h, i) => h.name || "№" + (i + 1);
+
+/* ── state ── */
+let map, popup, antennaLayer;
+let antennaMarkers = [];
+let activeFam = null, activeTab = "mah", moduleStatus = "all", query = "";
+let showMarks = true, showHubs = true, showRadius = false;
+let overlaysReady = false;
+let mahMarkers = [], hubMarkers = [], radiusCircles = [];
+let antennaGeo = null;
+
+const $ = (id) => document.getElementById(id);
+const $tip = $("tip");
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+const fmt = (n) => n.toLocaleString("ru-RU");
+const plural = (n, f) => { const a = Math.abs(n) % 100, b = a % 10; return f[(a > 10 && a < 20) ? 2 : (b > 1 && b < 5) ? 1 : (b === 1) ? 0 : 2]; };
+const cleanM = (m) => m.replace(/^махал+аи\s*/i, "");
+const isMobile = () => window.matchMedia("(max-width: 720px)").matches;
+
+/* deterministic scatter: same seed → dots never jump between reloads */
+function hashStr(s){ let h = 2166136261; for (let i = 0; i < s.length; i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+function mulberry32(a){ return function(){ a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+/* ── 8 282 register slots: 5 690 real IDs + 2 592 nearest-gateway classifications ── */
+function buildAntennas(){
+  const feats = [];
+  const gatewayCursors = Array(HUBS.length).fill(0);
+  HUBS.forEach((hub) => { hub.noId = 0; });
+  const mLat = 111320, base = 111320 * Math.cos(38.57 * Math.PI / 180);
+  for (let ri = 0; ri < REGISTRY.length; ri++){
+    const r = REGISTRY[ri];
+    const rng = mulberry32(hashStr(r.m + "|" + r.h + "|" + ri));
+    const n = r.c | 0, spread = 55;
+    const addFeature = (gi, assigned, moduleId, placement = null) => {
+      const rr = placement ? 0 : spread * Math.sqrt(rng()), aa = placement ? 0 : 2 * Math.PI * rng();
+      const lat = placement ? placement.lat : r.lat + (rr * Math.sin(aa)) / mLat;
+      const lng = placement ? placement.lng : r.lng + (rr * Math.cos(aa)) / base;
+      feats.push({
+        type: "Feature",
+        geometry: { type: "Point", coordinates: [lng, lat] },
+        properties: {
+          ri, fi: r.fi, gi, assigned: assigned ? 1 : 0, moduleId,
+          resolved: placement ? 1 : 0,
+          buildingId: placement?.b || "",
+          buildingHouse: placement?.h || "",
+          buildingStreet: placement?.s || "",
+          buildingType: placement?.t || "",
+        },
+      });
+      if (!assigned) HUBS[gi].noId++;
+    };
+    const resolved = ASSIGNMENT_DATA.resolvedRows?.[ri];
+    if (resolved){
+      resolved.forEach((placement) => {
+        const assigned = placement.g >= 0;
+        const gi = assigned ? placement.g : placement.n;
+        const moduleId = assigned ? ASSIGNMENT_DATA.gatewayModules[gi][gatewayCursors[gi]++] : "";
+        addFeature(gi, assigned, moduleId, placement);
+      });
+      continue;
+    }
+    const plan = ASSIGNMENT_DATA.rowGatewayCounts[ri] || [];
+    let assignedAtAddress = 0;
+    for (let gi = 0; gi < HUBS.length; gi++){
+      const count = plan[gi] || 0;
+      assignedAtAddress += count;
+      for (let k = 0; k < count; k++){
+        addFeature(gi, true, ASSIGNMENT_DATA.gatewayModules[gi][gatewayCursors[gi]++]);
+      }
+    }
+    const nearestGi = ASSIGNMENT_DATA.rowNearestGateway[ri];
+    for (let k = assignedAtAddress; k < n; k++){
+      addFeature(nearestGi, false, "");
+    }
+  }
+  antennaGeo = { type: "FeatureCollection", features: feats };
+}
+
+/* ── Canvas keeps thousands of module dots off the DOM ── */
+function dotRadius(){
+  const z = map.getZoom();
+  const stops = [[9, .75], [12, 1.5], [14, 2.75], [16, 5.5], [18.5, 10]];
+  for (let i = 1; i < stops.length; i++) {
+    if (z <= stops[i][0]) {
+      const [z0, r0] = stops[i - 1], [z1, r1] = stops[i];
+      return r0 + (r1 - r0) * Math.max(0, (z - z0) / (z1 - z0));
+    }
+  }
+  return 10;
+}
+function addAntennaLayers(){
+  if (!antennaLayer) antennaLayer = L.layerGroup().addTo(map);
+  if (!antennaMarkers.length) {
+    antennaMarkers = antennaGeo.features.map((feature) => {
+      const p = feature.properties, color = HUBS[p.gi].color;
+      const marker = L.circleMarker(L.GeoJSON.coordsToLatLng(feature.geometry.coordinates), {
+        radius: dotRadius(), color: p.assigned ? '#fff' : color,
+        weight: 1, fillColor: p.assigned ? color : '#fff',
+        fillOpacity: p.assigned ? .88 : .48, opacity: p.assigned ? .88 : .6,
+        bubblingMouseEvents: false,
+      });
+      marker.feature = feature;
+      marker.on('click', () => {
+        $tip.style.display = 'none';
+        openModule(REGISTRY[p.ri], p, feature.geometry.coordinates);
+      });
+      marker.on('mouseover mousemove', (e) => {
+        if (isMobile()) return;
+        const r = REGISTRY[p.ri];
+        const location = p.resolved ? ([p.buildingStreet, p.buildingHouse].filter(Boolean).join(', ') || p.buildingId) : r.h;
+        $tip.style.display = 'block';
+        $tip.style.left = Math.min(e.originalEvent.clientX + 14, innerWidth - 260) + 'px';
+        $tip.style.top = Math.min(e.originalEvent.clientY + 14, innerHeight - 50) + 'px';
+        $tip.innerHTML = '<span style="color:' + color + '">●</span> ' + esc(cleanM(r.m))
+          + (location ? ', ' + esc(location) : '') + ' · <b>' + (p.assigned ? esc(p.moduleId) : 'без ID') + '</b>';
+      });
+      marker.on('mouseout', () => { $tip.style.display = 'none'; });
+      return marker;
+    });
+  }
+  antennaLayer.clearLayers();
+  antennaMarkers.forEach((marker) => {
+    const p = marker.feature.properties;
+    if ((moduleStatus === 'all' || p.assigned === Number(moduleStatus))
+      && (activeFam == null || p.fi === activeFam)) antennaLayer.addLayer(marker);
+  });
+}
+function applyIsolation(){
+  if (overlaysReady) addAntennaLayers();
+}
+function buildRadiusCircles(){
+  radiusCircles.forEach((circle) => circle.remove());
+  radiusCircles = [];
+  if (!showHubs || !showRadius || !map) return;
+  HUBS.forEach((h) => {
+    radiusCircles.push(L.circle([h.lat, h.lng], {
+      radius: HUB_RADIUS_M, color: '#ff3d5a', weight: 1.4,
+      opacity: .53, fillOpacity: .04, interactive: false, pane: 'coverage',
+    }).addTo(map));
+  });
+}
+
+/* ── HTML-маркеры ── */
+const TWR_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><circle cx="12" cy="10" r="1.5" fill="currentColor" stroke="none"/><path d="M8.9 13.1a4.4 4.4 0 0 1 0-6.2M15.1 6.9a4.4 4.4 0 0 1 0 6.2"/><path d="M6.3 15.7a8 8 0 0 1 0-11.4M17.7 4.3a8 8 0 0 1 0 11.4"/><path d="M12 12v9"/></svg>';
+
+function buildMahMarkers(){
+  mahMarkers.forEach((m) => m.remove()); mahMarkers = [];
+  if (!showMarks || !map) return;
+  FAMILIES.forEach((f, i) => {
+    const el = document.createElement("div");
+    el.className = "mhl";
+    const dot = document.createElement("span");
+    dot.className = "mdot"; dot.style.background = "#8e8e93";
+    el.appendChild(dot);
+    el.title = f.label + " — " + fmt(f.count) + " " + plural(f.count, ["антенна","антенны","антенн"]);
+    el.addEventListener("click", (e) => { e.stopPropagation(); selectFam(i, true); });
+    mahMarkers.push(L.marker([f.lat, f.lng], {
+      icon: L.divIcon({ html: el, className: 'map-marker', iconSize: [15, 15], iconAnchor: [7.5, 7.5] }),
+      title: el.title, zIndexOffset: 500,
+    }).addTo(map));
+  });
+}
+function buildHubMarkers(){
+  hubMarkers.forEach((m) => m.remove()); hubMarkers = [];
+  if (!showHubs || !map) return;
+  HUBS.forEach((h, i) => {
+    const el = document.createElement("div");
+    el.className = "hub";
+    el.innerHTML = '<span class="ring"></span><span class="ring ring2"></span><div class="core">' + TWR_SVG + '</div><span class="num">' + (i + 1) + "</span>";
+    el.querySelector(".core").style.background = h.color;
+    el.querySelector(".num").style.background = h.color;
+    el.title = "Вышка " + hubName(h, i) + " — " + h.addr;
+    el.addEventListener("click", (e) => { e.stopPropagation(); openHub(i, false); });
+    hubMarkers.push(L.marker([h.lat, h.lng], {
+      icon: L.divIcon({ html: el, className: 'map-marker', iconSize: [46, 46], iconAnchor: [23, 23] }),
+      title: el.title, zIndexOffset: 1000,
+    }).addTo(map));
+  });
+}
+
+/* ── попапы ── */
+function closePopup(){
+  if (!popup) return;
+  popup.remove();
+  popup = null;
+}
+function showPopup(lngLat, html){
+  if (!map) return;
+  closePopup();
+  const el = document.createElement("div");
+  el.className = "map-popup";
+  el.innerHTML = '<button class="popup-close" type="button" aria-label="Закрыть">×</button>' + html;
+  el.querySelector(".popup-close").addEventListener("click", (e) => { e.stopPropagation(); closePopup(); });
+  const pad = fitPad();
+  popup = L.popup({
+    closeButton: false, maxWidth: 330, offset: [0, -17],
+    autoPanPaddingTopLeft: [pad.left, pad.top],
+    autoPanPaddingBottomRight: [pad.right, pad.bottom],
+  }).setLatLng([lngLat[1], lngLat[0]]).setContent(el).openOn(map);
+}
+const gLink = (lat, lng) => 'https://www.google.com/maps/search/?api=1&query=' + lat + ',' + lng;
+const yLink = (lat, lng) => 'https://yandex.ru/maps/?ll=' + lng + ',' + lat + '&z=17&pt=' + lng + ',' + lat;
+function distanceKm(a, b){
+  const rad = (v) => v * Math.PI / 180, R = 6371;
+  const dLat = rad(b.lat - a.lat), dLng = rad(b.lng - a.lng);
+  const x = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
+}
+
+function focusMap(coordinates, minZoom){
+  if (!map) return;
+  const zoom = Math.max(map.getZoom(), minZoom), pad = fitPad();
+  const center = map.project([coordinates[1], coordinates[0]], zoom)
+    .add([(pad.right - pad.left) / 2, (pad.bottom - pad.top) / 2]);
+  map.setView(map.unproject(center, zoom), zoom, { animate: false });
+}
+
+function openHub(i, fly){
+  const h = HUBS[i];
+  if (fly){
+    if (isMobile()) setSheet(true);
+    focusMap([h.lng, h.lat], 15);
+  }
+  showPopup([h.lng, h.lat],
+    '<div class="pp">'
+    + '<div class="pp-k twr">Большая антенна · вышка</div>'
+    + '<div class="pp-t">' + esc(hubName(h, i)) + ' · ' + esc(h.addr) + '</div>'
+    + '<div class="pp-sub">' + esc(h.area) + '</div>'
+    + '<div class="pp-rows">'
+    +   '<div class="pp-row"><span>Gateway ID</span><b>' + esc(h.gatewayId) + '</b></div>'
+    +   '<div class="pp-row"><span>Модулей с ID</span><b style="color:' + h.color + '">' + fmt(h.capacity) + '</b></div>'
+    +   '<div class="pp-row"><span>Модулей без ID</span><b>' + fmt(h.noId) + '</b></div>'
+    +   '<div class="pp-row"><span>Радиус покрытия</span><b class="hot">9 км</b></div>'
+    +   '<div class="pp-row"><span>Координаты</span><b>' + h.lat.toFixed(6) + ', ' + h.lng.toFixed(6) + '</b></div>'
+    + '</div>'
+    + '<div class="pp-actions"><a href="' + gLink(h.lat, h.lng) + '" target="_blank" rel="noopener">Google Maps ↗</a>'
+    + '<a href="' + yLink(h.lat, h.lng) + '" target="_blank" rel="noopener">Яндекс ↗</a></div>'
+    + '</div>');
+}
+function openModule(r, properties, lngLat){
+  const gi = Number(properties.gi);
+  const assigned = Number(properties.assigned) === 1;
+  const resolved = Number(properties.resolved) === 1;
+  const hub = HUBS[gi];
+  const point = { lat: Number(lngLat[1]), lng: Number(lngLat[0]) };
+  const buildingAddress = [properties.buildingStreet, properties.buildingHouse].filter(Boolean).join(", ");
+  const locationLine = resolved
+    ? (buildingAddress || "здание без публичного номера")
+    : r.h;
+  showPopup(lngLat,
+    '<div class="pp">'
+    + '<div class="pp-k" style="color:' + hub.color + '">' + (assigned ? 'Module ID назначен' : 'Без Module ID') + '</div>'
+    + '<div class="pp-t">' + esc(cleanM(r.m)) + '</div>'
+    + (locationLine ? '<div class="pp-sub">хона / кӯча: <b style="color:var(--text)">' + esc(locationLine) + '</b></div>' : '')
+    + '<div class="pp-rows">'
+    +   '<div class="pp-row"><span>Module ID</span><b>' + (assigned ? esc(properties.moduleId) : '—') + '</b></div>'
+    +   '<div class="pp-row"><span>Вышка</span><b style="color:' + hub.color + '">' + esc(hubName(hub, gi)) + '</b></div>'
+    +   '<div class="pp-row"><span>Gateway ID</span><b>' + esc(hub.gatewayId) + '</b></div>'
+    +   '<div class="pp-row"><span>Расстояние</span><b>' + distanceKm(point, hub).toFixed(2) + ' км</b></div>'
+    +   (resolved ? '<div class="pp-row"><span>Здание</span><b>' + esc(properties.buildingId) + '</b></div>' : '')
+    + '</div>'
+    + (!assigned ? '<div class="pp-apx">Ближайшая вышка определена, но свободного Module ID нет.</div>' : '')
+    + (resolved ? '<div class="pp-apx">Выбран отдельный жилой дом-кандидат из каталога 2GIS; требуется полевая проверка.</div>' : r.ap ? '<div class="pp-apx">≈ примерное расположение (уровень махалли)</div>' : '')
+    + '<div class="pp-actions"><a href="' + gLink(point.lat, point.lng) + '" target="_blank" rel="noopener">Google Maps ↗</a></div>'
+    + '</div>');
+}
+function openFam(i){
+  const f = FAMILIES[i];
+  showPopup([f.lng, f.lat],
+    '<div class="pp">'
+    + '<div class="pp-k">Махалла</div>'
+    + '<div class="pp-t">' + esc(f.label) + '</div>'
+    + '<div class="pp-rows">'
+    +   '<div class="pp-row"><span>Антенн</span><b class="hot">' + fmt(f.count) + '</b></div>'
+    +   '<div class="pp-row"><span>Адресов в реестре</span><b>' + f.rows + '</b></div>'
+    + '</div>'
+    + (f.approx ? '<div class="pp-apx">≈ примерное расположение</div>' : '')
+    + '</div>');
+}
+
+/* ── выбор махалли (изоляция) ── */
+function selectFam(i, toggle){
+  activeFam = (toggle && activeFam === i) ? null : i;
+  if (activeFam != null){
+    if (isMobile()) setSheet(true);
+    const f = FAMILIES[i];
+    focusMap([f.lng, f.lat], 14.2);
+    openFam(i);
+  } else closePopup();
+  applyIsolation(); renderList();
+}
+function resetFam(){ activeFam = null; closePopup(); applyIsolation(); renderList(); fitAll(); }
+
+/* ── список в панели ── */
+function renderList(){
+  const $list = $("list"); $list.innerHTML = "";
+  const q = query.trim().toLowerCase();
+  let shown = 0;
+
+  if (activeTab === "mah"){
+    $("listNote").textContent = "по числу антенн";
+    FAMILIES.forEach((f, i) => {
+      if (q && !f.label.toLowerCase().includes(q) && !f.key.includes(q)) return;
+      const el = document.createElement("div");
+      el.className = "item" + (activeFam === i ? " active" : "");
+      el.style.animationDelay = Math.min(shown * 22, 380) + "ms";
+      el.innerHTML =
+        '<div class="swatch" style="background:#8e8e93;color:#8e8e93"></div>'
+        + '<div class="body"><div class="name">' + esc(f.label) + (f.approx ? ' <span class="apx" title="примерное расположение">≈</span>' : '') + '</div>'
+        + '<div class="meta">' + f.rows + ' ' + plural(f.rows, ["адрес","адреса","адресов"]) + '</div></div>'
+        + '<div class="cnt">' + fmt(f.count) + '<small>антенн</small></div>';
+      el.onclick = () => selectFam(i, true);
+      $list.appendChild(el); shown++;
+    });
+  } else {
+    $("listNote").textContent = "большие антенны · адреса";
+    HUBS.forEach((h, i) => {
+      if (q && !(h.addr + " " + h.area + " " + hubName(h, i) + " " + h.gatewayId).toLowerCase().includes(q)) return;
+      const el = document.createElement("div");
+      el.className = "item";
+      el.style.animationDelay = Math.min(shown * 22, 380) + "ms";
+      el.innerHTML =
+        '<div class="twr-ico" style="background:' + h.color + ';border-color:' + h.color + ';color:#fff">' + (i + 1) + '</div>'
+        + '<div class="body"><div class="name"><span class="code">' + esc(hubName(h, i)) + '</span></div>'
+        + '<div class="meta">' + esc(h.gatewayId) + '</div>'
+        + '<div class="meta">' + esc(h.addr) + ' · ' + esc(h.area) + '</div></div>'
+        + '<div class="cnt gateway-counts">'
+        +   '<span class="metric"><b style="color:' + h.color + '">' + fmt(h.capacity) + '</b><small>с ID</small></span>'
+        +   '<span class="metric without-id"><b>' + fmt(h.noId) + '</b><small>без ID</small></span>'
+        + '</div>';
+      el.onclick = () => openHub(i, true);
+      $list.appendChild(el); shown++;
+    });
+  }
+  if (!shown) $list.innerHTML = '<div class="empty">Ничего не найдено по запросу «' + esc(query) + '»</div>';
+  $("reset").style.display = activeFam != null ? "block" : "none";
+}
+
+function fitAll(){
+  if (!map) return;
+  const pad = fitPad();
+  map.fitBounds(bounds0, {
+    paddingTopLeft: [pad.left, pad.top], paddingBottomRight: [pad.right, pad.bottom],
+    maxZoom: 14.5, animate: false,
+  });
+}
+const fitPad = () => isMobile()
+  ? { top: $('mapError').classList.contains('show') ? $('mapError').getBoundingClientRect().bottom + 16 : 90, right: 24, bottom: document.body.classList.contains('sheet-collapsed') ? 110 : Math.round($('panel').getBoundingClientRect().height) + 24, left: 24 }
+  : { top: 60, right: 80, bottom: 60, left: document.body.classList.contains('panel-hidden') ? 80 : 420 };
+
+function updateControlPadding(){
+  if (!map) return;
+  const bottom = isMobile()
+    ? (document.body.classList.contains('sheet-collapsed') ? 78 : Math.round($('panel').getBoundingClientRect().height) + 10)
+    : 14;
+  $('map').style.setProperty('--map-control-bottom', bottom + 'px');
+}
+
+function showMapError(message){
+  const el = $("mapError");
+  el.textContent = message;
+  el.classList.add("show");
+}
+
+/* ── шапка/статистика ── */
+(function initStats(){
+  const totalAnt = FAMILIES.reduce((s, f) => s + f.count, 0);
+  $("stAnt").textContent = fmt(totalAnt);
+  $("stAssigned").textContent = fmt(ASSIGNMENT_DATA.totals.assigned);
+  $("stUnassigned").textContent = fmt(ASSIGNMENT_DATA.totals.unassigned);
+  $("nMah").textContent = FAMILIES.length;
+  $("shAnt").textContent = fmt(totalAnt);
+})();
+
+/* ── карта ── */
+buildAntennas();
+const bounds0 = [...REGISTRY, ...HUBS].map((p) => [p.lat, p.lng]);
+if (isMobile()) document.body.classList.add('sheet-collapsed');
+try {
+  map = L.map('map', {
+    center: [38.575, 68.75], zoom: 12, minZoom: 8, maxZoom: 20,
+    zoomSnap: .5, preferCanvas: true, zoomControl: false, attributionControl: false,
+  });
+  map.createPane('coverage').style.zIndex = 350;
+  L.control.zoom({ position: 'bottomright' }).addTo(map);
+  L.control.scale({ position: 'bottomright', imperial: false }).addTo(map);
+  L.control.attribution({ position: 'topright', prefix: false }).addTo(map);
+  addMapBackground(map, {onError: showMapError, onReady: () => $('mapError').classList.remove('show')});
+  overlaysReady = true;
+  addAntennaLayers();
+  buildMahMarkers();
+  buildHubMarkers();
+  buildRadiusCircles();
+  updateControlPadding();
+  map.on('zoomend', () => {
+    const radius = dotRadius();
+    antennaMarkers.forEach((marker) => marker.setRadius(radius));
+  });
+  fitAll();
+  map.on('click', closePopup);
+  map.on('movestart', () => { $tip.style.display = 'none'; });
+  const resizeMap = () => { map.invalidateSize(); updateControlPadding(); };
+  new ResizeObserver(resizeMap).observe($('map'));
+  window.addEventListener('resize', resizeMap);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) resizeMap(); });
+} catch (error) {
+  console.error(error);
+  showMapError('Не удалось запустить карту. Обновите страницу и проверьте подключение.');
+}
+
+/* ── UI ── */
+$("search").addEventListener("input", (e) => { query = e.target.value; renderList(); });
+
+$("tgMarks").onchange = (e) => { showMarks = e.target.checked; buildMahMarkers(); };
+$("tgHubs").onchange = (e) => {
+  showHubs = e.target.checked; buildHubMarkers();
+  buildRadiusCircles();
+};
+$("tgRadius").onchange = (e) => {
+  showRadius = e.target.checked;
+  buildRadiusCircles();
+};
+document.querySelectorAll("[data-id-status]").forEach((button) => {
+  button.onclick = () => {
+    moduleStatus = button.dataset.idStatus;
+    document.querySelectorAll("[data-id-status]").forEach((item) => {
+      const selected = item === button;
+      item.classList.toggle("on", selected);
+      item.setAttribute("aria-pressed", String(selected));
+    });
+    closePopup();
+    $tip.style.display = "none";
+    applyIsolation();
+  };
+});
+document.querySelectorAll(".tab").forEach((t) => t.onclick = () => {
+  activeTab = t.dataset.t;
+  document.querySelectorAll(".tab").forEach((x) => x.classList.toggle("on", x === t));
+  renderList();
+});
+$("reset").onclick = resetFam;
+$("fit").onclick = () => { if (isMobile()) setSheet(true); if (activeFam != null) resetFam(); else fitAll(); };
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && activeFam != null) resetFam(); });
+
+$("exportCsv").onclick = () => {
+  const rows = [["module_id","status","gateway","gateway_id","mahalla","house","street","lat","lng","distance_km","location_quality","building_reference","building_type"]];
+  antennaGeo.features.forEach((feature) => {
+    const p = feature.properties, r = REGISTRY[Number(p.ri)], h = HUBS[Number(p.gi)];
+    const point = { lat: feature.geometry.coordinates[1], lng: feature.geometry.coordinates[0] };
+    const resolved = Number(p.resolved) === 1;
+    rows.push([
+      p.moduleId || "",
+      Number(p.assigned) === 1 ? "assigned" : "no_id_available",
+      hubName(h, Number(p.gi)),
+      h.gatewayId,
+      r.m,
+      p.buildingHouse || r.h,
+      p.buildingStreet || "",
+      point.lat,
+      point.lng,
+      distanceKm(point, h).toFixed(3),
+      resolved ? "selected_2gis_residential_building" : r.ap ? "estimated_mahalla" : "mapped_address",
+      p.buildingId || "",
+      p.buildingType || "",
+    ]);
+  });
+  const csv = rows.map((row) => row.map((c) => '"' + String(c).replace(/"/g, '""') + '"').join(",")).join("\n");
+  const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "tojikelectrocomplect-baylan-module-assignment.csv"; a.click();
+};
+
+/* ── панель: сворачивание (desktop) + bottom sheet (mobile) ── */
+$("panelHide").onclick = () => { document.body.classList.add("panel-hidden"); updateControlPadding(); };
+$("panelOpen").onclick = () => { document.body.classList.remove("panel-hidden"); updateControlPadding(); };
+
+function setSheet(collapsed){
+  document.body.classList.toggle("sheet-collapsed", collapsed);
+  $("sheetToggle").setAttribute("aria-expanded", String(!collapsed));
+  requestAnimationFrame(updateControlPadding);
+}
+$("sheetToggle").addEventListener("click", () => setSheet(!document.body.classList.contains("sheet-collapsed")));
+(function(){
+  let y0 = null; const t = $("sheetToggle");
+  t.addEventListener("touchstart", (e) => { y0 = e.touches[0].clientY; }, { passive: true });
+  t.addEventListener("touchend", (e) => {
+    if (y0 == null) return;
+    const dy = e.changedTouches[0].clientY - y0; y0 = null;
+    e.preventDefault();
+    if (dy > 24) setSheet(true); else if (dy < -24) setSheet(false);
+    else setSheet(!document.body.classList.contains("sheet-collapsed"));
+  }, { passive: false });
+})();
+if (isMobile()) setSheet(true);   // телефоны стартуют с картой во весь экран
+
+renderList();
+</script>
+</body>
+</html>

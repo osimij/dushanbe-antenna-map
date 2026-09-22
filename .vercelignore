@@ -1,3 +1,7 @@
 *.xlsx
 *backup*.html
 .DS_Store
+.address-work/
+scripts/
+tests/
+outputs/
