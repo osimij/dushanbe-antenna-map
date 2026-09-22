@@ -1,0 +1,8 @@
+.map-provider { background: rgba(255,255,255,.94); padding: 5px 8px; border-radius: 6px; color: #444; font: 11px/1.4 system-ui, sans-serif; max-width: 240px; }
+/* Keep Google's original logo clear of the address panel and mobile sheet. */
+.google-map-active .leaflet-bottom.leaflet-left { left: 410px; bottom: var(--map-control-bottom, 14px); }
+body.panel-hidden .google-map-active .leaflet-bottom.leaflet-left { left: 0; }
+@media (max-width: 720px) {
+  .google-map-active .leaflet-bottom.leaflet-left { left: 0; bottom: calc(var(--map-control-bottom, 14px) + 18px); }
+  .map-provider { max-width: 200px; font-size: 10px; }
+}

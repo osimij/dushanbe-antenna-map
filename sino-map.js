@@ -55,7 +55,7 @@
     const b = group.building;
     $('detailsContent').innerHTML = `<h2 id="detailsTitle">${esc(group.title)}</h2>`
       + `<p>${fmt(group.modules.length)} модулей. ${group.status === 'matched' ? 'Адрес здания найден в 2GIS и находится в районе Сино.' : esc(reasons[group.status]) + '. Точка на карте не ставится до уточнения.'}</p>`
-      + (group.status === 'matched' ? `<p>${esc(b.mapAddress)} · ${b.lat.toFixed(6)}, ${b.lng.toFixed(6)}</p><div class="detail-actions"><a href="${esc(b.url)}" target="_blank" rel="noopener">Здание в 2GIS ↗</a><a href="https://yandex.ru/maps/?pt=${b.lng},${b.lat}&z=18&l=map" target="_blank" rel="noopener">Яндекс Карты ↗</a></div>` : '')
+      + (group.status === 'matched' ? `<p>${esc(b.mapAddress)} · ${b.lat.toFixed(6)}, ${b.lng.toFixed(6)}</p><div class="detail-actions"><a href="${esc(b.url)}" target="_blank" rel="noopener">Здание в 2GIS ↗</a><a href="https://www.google.com/maps/search/?api=1&query=${b.lat},${b.lng}" target="_blank" rel="noopener">Google Maps ↗</a></div>` : '')
       + '<table class="module-table"><thead><tr><th>Module ID</th><th>Адрес в реестре</th><th>Вышка</th></tr></thead><tbody>'
       + group.modules.map(m => `<tr><td>${esc(m.id)}</td><td>${m.sources.map(s => `${esc(s.address)}<small>${esc(sourceText(s))}</small>`).join('<br>')}</td><td>${gatewayText(m)}</td></tr>`).join('') + '</tbody></table>';
     $('addressDetails').showModal();

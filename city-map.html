@@ -337,6 +337,7 @@
     .map-popup { width: min(300px, 84vw); }
   }
 </style>
+<link rel="stylesheet" href="./map-background.css" />
 </head>
 <body>
 
@@ -414,7 +415,7 @@
 
 <script src="./vendor/leaflet/leaflet.js"></script>
 <script src="./map-config.js"></script>
-<script src="./yandex-tiles.js"></script>
+<script src="./vendor/google-mutant/Leaflet.GoogleMutant.js"></script>
 <script src="./map-background.js"></script>
 <script src="./assignment-data.js"></script>
 
@@ -654,7 +655,6 @@ function showPopup(lngLat, html){
   }).setLatLng([lngLat[1], lngLat[0]]).setContent(el).openOn(map);
 }
 const gLink = (lat, lng) => 'https://www.google.com/maps/search/?api=1&query=' + lat + ',' + lng;
-const yLink = (lat, lng) => 'https://yandex.ru/maps/?ll=' + lng + ',' + lat + '&z=17&pt=' + lng + ',' + lat;
 function distanceKm(a, b){
   const rad = (v) => v * Math.PI / 180, R = 6371;
   const dLat = rad(b.lat - a.lat), dLng = rad(b.lng - a.lng);
@@ -688,8 +688,7 @@ function openHub(i, fly){
     +   '<div class="pp-row"><span>Радиус покрытия</span><b class="hot">9 км</b></div>'
     +   '<div class="pp-row"><span>Координаты</span><b>' + h.lat.toFixed(6) + ', ' + h.lng.toFixed(6) + '</b></div>'
     + '</div>'
-    + '<div class="pp-actions"><a href="' + gLink(h.lat, h.lng) + '" target="_blank" rel="noopener">Google Maps ↗</a>'
-    + '<a href="' + yLink(h.lat, h.lng) + '" target="_blank" rel="noopener">Яндекс ↗</a></div>'
+    + '<div class="pp-actions"><a href="' + gLink(h.lat, h.lng) + '" target="_blank" rel="noopener">Google Maps ↗</a></div>'
     + '</div>');
 }
 function openModule(r, properties, lngLat){

@@ -29,12 +29,16 @@ python3 -m http.server 8000
 # open http://localhost:8000
 ```
 
-The street-map background works immediately using OpenStreetMap. An optional
-Yandex Tiles key can be added in `map-config.js`; with a valid key, Yandex is used.
-If Yandex rejects the key, the background falls back to OpenStreetMap. Both views
-use the same background setup, and module locations are independent of the provider.
-OpenStreetMap tiles use normal browser caching and visible attribution, following
-the [tile usage policy](https://operations.osmfoundation.org/policies/tiles/).
+The street-map background uses **Google Maps JavaScript API** when a working key
+is configured in `map-config.js`. It loads through Leaflet.GoogleMutant 0.16.0
+(vendored with its license), so the existing markers, search, and gateway overlays
+keep their coordinates and behavior. Google's original logo and attribution stay
+visible above the map. No Places, routing, or geocoding API is used by the app.
+
+Without a key, or if Google fails to load, the map falls back to OpenStreetMap and
+shows that provider explicitly. Both the Sino and legacy city maps share this
+setup. OpenStreetMap tiles use browser caching and visible attribution under its
+[tile usage policy](https://operations.osmfoundation.org/policies/tiles/).
 
 ## Address matching and limitations
 
@@ -77,28 +81,30 @@ The generated `sino-data.js` and the catalog evidence are committed with the sit
 filters, CSV export, and the previous citywide view using Playwright against the
 running local server. `NODE_PATH` can point at the bundled Playwright installation.
 
-## Connect the free Yandex map
+## Connect Google Maps
 
-1. Sign in to [Yandex Developer Dashboard](https://developer.tech.yandex.ru/).
-2. Connect **Tiles API** and create its API key (not a JavaScript API or Geocoder key).
-3. Paste the key into `yandexTilesApiKey` in `map-config.js`.
-4. Restrict that browser key to your deployed domain in Yandex; allow your localhost
-   development address separately when testing. Newly issued keys can take 15 minutes
-   to activate. Confirm the free Tiles plan is available for your account.
-5. Reload the app. Without a key, OpenStreetMap supplies the background automatically.
+1. In [Google Cloud Console](https://console.cloud.google.com/), select the map's project.
+2. Enable **Maps JavaScript API** and link an active billing account.
+3. Create a browser API key restricted to **Maps JavaScript API**.
+4. Add website restrictions for `https://dushanbe-antenna-map.vercel.app/*`,
+   `http://localhost:8000/*`, and any other exact deployment domain in use.
+5. Set `googleMapsApiKey` in `map-config.js`. This browser key is visible by design;
+   do not put service account credentials or other secrets in this file.
+6. Refresh the app and confirm the provider badge says **Google Maps** and Google's
+   logo and map-data attribution are visible. A working fallback alone does not
+   mean that the Google key or billing is configured correctly.
 
-The key is used in browser requests and is not a server secret. Never put other
-credentials in `map-config.js`. The Yandex logo and terms link are shown when Yandex
-is active; OpenStreetMap attribution is shown when the fallback is active.
+As checked on 23 September 2026, the standard Dynamic Maps SKU includes 10,000
+free map loads per month, then $7 per 1,000 at the first paid tier. Billing must
+still be enabled. Other APIs and other projects on the same billing account can
+have their own usage; this is not a guarantee of zero charges. See
+[Google's pricing](https://developers.google.com/maps/billing-and-pricing/pricing).
+The app creates one Google map instance per page load, and does not recreate it
+when searching or filtering modules. API-key restrictions and usage quotas should
+be configured in the console; budget alerts alone do not stop charges.
 
-As checked on 22 September 2026, [Yandex's terms, sections 6.5.1–6.5.2](https://yandex.ru/legal/maps_api/ru/)
-permit Tiles API in closed/internal systems with your own data overlaid, up to 30
-requests/second. [The product page](https://yandex.ru/maps-api/products/tiles-api)
-describes the free offer as ongoing, not a trial. Normal browser caching is used;
-there is no offline tile downloader or permanent tile storage.
-
-The official Yandex logo in `assets/yandex-logo.svg` comes from the archive linked
-in the [Tiles API documentation](https://yandex.ru/maps-api/docs/tiles-api/index.html).
+The old Yandex adapter and logo are retained in the repository for reference, but
+neither map loads or uses that adapter.
 
 ## Deploy to Vercel
 
