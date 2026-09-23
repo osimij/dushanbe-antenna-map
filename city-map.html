@@ -2,188 +2,20 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
+<meta name="theme-color" content="#eef1f5" />
 <title>Tojikelectrocomplect &amp; Baylan · Реестр антенн</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📡</text></svg>" />
+<link rel="preconnect" href="https://maps.googleapis.com" />
+<link rel="preconnect" href="https://maps.gstatic.com" crossorigin />
 <link rel="stylesheet" href="./vendor/leaflet/leaflet.css" />
+<link rel="stylesheet" href="./app.css" />
 <style>
-  :root {
-    color-scheme: light;
-    --ink: #eef1f5;
-    --glass: rgba(255, 255, 255, .94);
-    --glass-2: rgba(255, 255, 255, .97);
-    --raise: #f2f2f7;
-    --line: rgba(60, 60, 67, .12);
-    --line-2: rgba(60, 60, 67, .20);
-    --text: #1d1d1f;
-    --muted: #6e6e73;
-    --faint: #8e8e93;
-    --accent: #007aff;
-    --accent-2: #0066d6;
-    --accent-soft: rgba(0, 122, 255, .10);
-    --tower: #ff3b30;
-    --ok: #34c759;
-    --mono: ui-monospace, "SFMono-Regular", SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    --disp: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
-    --body: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
-    --peek: calc(64px + env(safe-area-inset-bottom, 0px));
-    --ease: cubic-bezier(.32, .72, 0, 1);
-    --shadow: 0 18px 48px rgba(0, 0, 0, .14), 0 2px 8px rgba(0, 0, 0, .06);
-  }
-  * { box-sizing: border-box; }
-  html, body { height: 100%; margin: 0; }
-  body {
-    font-family: var(--body); color: var(--text); background: var(--ink);
-    height: 100vh; height: 100dvh; overflow: hidden; overscroll-behavior: none;
-    -webkit-tap-highlight-color: transparent; -webkit-font-smoothing: antialiased;
-  }
-
-  #map { position: absolute; z-index: 0; inset: 0; background: #e9edf0; }
-  #map canvas { outline: none; }
-  .map-marker { background: transparent; border: 0; }
-  .leaflet-container { font-family: var(--body); }
-  .leaflet-popup-content-wrapper { padding: 0; background: transparent; box-shadow: none; }
-  .leaflet-popup-content { margin: 0; }
-  .leaflet-popup-tip-container { display: none; }
-  .leaflet-top.leaflet-right { max-width: calc(100% - 24px); }
-  .yandex-brand { background: rgba(255,255,255,.94); border-radius: 8px; display: flex; align-items: center; }
-  .yandex-brand img { display: block; width: 88px; height: auto; }
-  .yandex-brand .open-yandex { padding: 8px 10px 8px 0; font-size: 11px; color: #333; }
-  .leaflet-control-attribution { font-size: 10px; border-radius: 5px; }
-  .leaflet-bottom.leaflet-right { bottom: var(--map-control-bottom, 14px); }
-  button:focus-visible, a:focus-visible, input:focus-visible {
-    outline: 3px solid rgba(0, 122, 255, .28); outline-offset: 2px;
-  }
-
-  /* ═══════════════ floating control panel ═══════════════ */
-  #panel {
-    position: absolute; z-index: 30; top: 16px; left: 16px; bottom: 16px; width: 380px;
-    display: flex; flex-direction: column;
-    background: var(--glass); backdrop-filter: blur(28px) saturate(1.15); -webkit-backdrop-filter: blur(28px) saturate(1.15);
-    border: 1px solid rgba(255, 255, 255, .82); border-radius: 22px; box-shadow: var(--shadow);
-    overflow: hidden; transition: transform .28s var(--ease), opacity .2s ease-out;
-  }
-  body.panel-hidden #panel { transform: translateX(-112%); opacity: 0; pointer-events: none; }
-
-  #panelOpen {
-    position: absolute; z-index: 29; top: 16px; left: 16px; display: none; align-items: center; gap: 8px;
-    padding: 10px 14px; background: var(--glass); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-    color: var(--text); border: 1px solid rgba(255, 255, 255, .82); border-radius: 13px;
-    font: 600 13px/1 var(--body); cursor: pointer; box-shadow: var(--shadow);
-    transition: transform .14s ease-out, background-color .16s ease;
-  }
-  #panelOpen:active { transform: scale(.97); }
-  body.panel-hidden #panelOpen { display: flex; }
-
-  .sheet-toggle { display: none; }
-
-  .head { padding: 18px 18px 15px; border-bottom: 1px solid var(--line); }
-  .brand { display: flex; align-items: center; gap: 11px; }
-  .brand > div:nth-child(2) { min-width: 0; flex: 1; }
-  .logo {
-    flex: 0 0 auto; width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center;
-    background: var(--accent); color: #fff;
-  }
-  .logo svg { width: 22px; height: 22px; }
-  .brand h1 {
-    margin: 0; font: 700 14px/1.18 var(--disp); letter-spacing: -.025em; white-space: nowrap;
-  }
-  .brand h1 em { font-style: normal; color: var(--faint); font-weight: 500; }
-  .brand .sub { margin-top: 3px; font-size: 11px; color: var(--muted); letter-spacing: -.005em; }
-  .navbtn {
-    margin-left: auto; flex: 0 0 auto; width: 30px; height: 30px; display: grid; place-items: center;
-    background: var(--raise); border: 0; border-radius: 9px; color: var(--muted);
-    font-size: 17px; padding: 0 0 2px; cursor: pointer;
-    transition: transform .14s ease-out, background-color .16s ease, color .16s ease;
-  }
-  .navbtn:active { transform: scale(.94); }
-
-  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; margin-top: 15px; }
-  .stat {
-    background: var(--raise); border: 0; border-radius: 11px;
-    padding: 8px 4px 7px; text-align: center;
-  }
-  .stat b { display: block; font: 700 15px/1.1 var(--body); letter-spacing: -.02em; }
-  .stat span { display: block; margin-top: 3px; font-size: 9.5px; color: var(--muted); letter-spacing: .01em; }
-  .stat.hot b { color: var(--accent); }
-
-  .controls { padding: 13px 16px 12px; display: flex; flex-direction: column; gap: 10px; border-bottom: 1px solid var(--line); }
-  .search { position: relative; }
-  .search input {
-    width: 100%; background: var(--raise); border: 1px solid transparent; color: var(--text);
-    border-radius: 11px; padding: 9px 12px 9px 34px; font: 400 13.5px var(--body); outline: none;
-    transition: border-color .16s ease, box-shadow .16s ease, background-color .16s ease;
-  }
-  .search input::placeholder { color: var(--faint); }
-  .search input:focus { border-color: rgba(0,122,255,.42); background: #fff; box-shadow: 0 0 0 3px var(--accent-soft); }
-  .search svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; color: var(--faint); }
-
-  .row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-  .seg { display: flex; width: 100%; background: var(--raise); border: 0; border-radius: 10px; padding: 2px; }
-  .seg button {
-    flex: 1; border: 0; background: transparent; color: var(--muted); font: 600 12px var(--body);
-    padding: 7px 10px; border-radius: 8px; cursor: pointer;
-    transition: transform .14s ease-out, background-color .16s ease, color .16s ease, box-shadow .16s ease;
-  }
-  .seg button.on { background: #fff; color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.10); }
-  .seg button:active { transform: scale(.97); }
-  .seg button:focus-visible { outline: 3px solid rgba(0,122,255,.22); outline-offset: 1px; }
-  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
-  .chip { position: relative; cursor: pointer; }
-  .chip input { position: absolute; opacity: 0; pointer-events: none; }
-  .chip span {
-    display: inline-flex; align-items: center; gap: 5px; padding: 5.5px 10px; border-radius: 999px;
-    background: var(--raise); border: 1px solid transparent; color: var(--muted);
-    font-size: 11.5px; font-weight: 600; user-select: none; -webkit-user-select: none;
-    transition: transform .14s ease-out, background-color .16s ease, border-color .16s ease, color .16s ease;
-  }
-  .chip span::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: .5; }
-  .chip input:checked + span { background: var(--accent-soft); border-color: rgba(0,122,255,.18); color: var(--accent-2); }
-  .chip input:checked + span::before { background: var(--accent); opacity: 1; }
-  .chip input:focus-visible + span { outline: 3px solid rgba(0,122,255,.22); outline-offset: 1px; }
-  .chip:active span { transform: scale(.97); }
+  /* Citywide estimate only; the shared shell lives in app.css. */
   .assignment-key { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 10.5px; }
   .assignment-key span { display: inline-flex; align-items: center; gap: 5px; }
   .assignment-key i { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); border: 1.5px solid var(--accent); }
   .assignment-key .open { background: rgba(255,255,255,.9); opacity: .62; }
-
-  /* tabs */
-  .tabs { display: flex; gap: 2px; margin: 11px 16px 0; padding: 2px; background: var(--raise); border-radius: 10px; }
-  .tab {
-    flex: 1; background: transparent; border: 0; color: var(--muted);
-    font: 600 12px var(--body); letter-spacing: -.005em;
-    padding: 7px 4px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 7px;
-    transition: transform .14s ease-out, color .16s ease, background-color .16s ease, box-shadow .16s ease;
-  }
-  .tab:active { transform: scale(.98); }
-  .tab .n { font: 600 10px/1.5 var(--body); background: rgba(60,60,67,.08); border-radius: 999px; padding: 1px 7px; color: var(--muted); }
-  .tab.on { color: var(--text); background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
-  .tab.on .n { background: var(--accent-soft); color: var(--accent-2); }
-  .list-note { display: flex; align-items: center; padding: 11px 18px 3px; color: var(--faint); font-size: 10.5px; letter-spacing: .01em; }
-  .list-note .reset {
-    margin-left: auto; display: none; background: none; border: none; color: var(--accent);
-    font: 600 11px var(--body); letter-spacing: 0; cursor: pointer; padding: 2px 4px;
-  }
-  .list-note .reset:hover { text-decoration: underline; }
-
-  #list { flex: 1; min-height: 0; overflow-y: auto; padding: 4px 10px 12px; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--line-2) transparent; }
-  #list::-webkit-scrollbar { width: 7px; }
-  #list::-webkit-scrollbar-thumb { background: var(--line); border-radius: 8px; }
-
-  .item {
-    display: flex; align-items: center; gap: 11px; padding: 9px 10px; border-radius: 12px;
-    cursor: pointer; border: 1px solid transparent; animation: rise .28s var(--ease) both;
-    transition: transform .14s ease-out, background-color .16s ease, border-color .16s ease;
-  }
-  @keyframes rise { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: none; } }
-  .item:active { transform: scale(.985); }
-  .item.active { background: var(--accent-soft); border-color: rgba(0,122,255,.15); }
-  .swatch { flex: 0 0 auto; width: 13px; height: 13px; border-radius: 50%; border: 2px solid #fff; outline: 1px solid rgba(60,60,67,.12); }
-  .item .body { flex: 1; min-width: 0; }
-  .item .name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .item .meta { font-size: 11px; color: var(--muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .item .cnt { font: 650 13px var(--body); color: var(--text); font-variant-numeric: tabular-nums; }
-  .item .cnt small { display: block; font: 500 9px var(--body); color: var(--faint); letter-spacing: .01em; text-align: right; }
   .item .gateway-counts { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; min-width: 72px; }
   .item .gateway-counts .metric { display: flex; align-items: baseline; justify-content: flex-end; gap: 5px; line-height: 1; }
   .item .gateway-counts b { font: 650 13px var(--body); font-variant-numeric: tabular-nums; }
@@ -200,19 +32,8 @@
     background: rgba(255, 59, 48, .09); border: 1px solid rgba(255, 59, 48, .16); color: #d92d20;
     font: 700 12px var(--body);
   }
-  .empty { padding: 26px 16px; color: var(--muted); font-size: 13px; text-align: center; line-height: 1.6; }
+  .item:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
 
-  .foot { border-top: 1px solid var(--line); padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0px)); display: flex; gap: 8px; }
-  .foot button {
-    flex: 1; display: flex; align-items: center; justify-content: center; gap: 7px;
-    background: var(--raise); border: 0; color: var(--text);
-    font: 600 12.5px var(--body); padding: 10px; border-radius: 11px; cursor: pointer;
-    transition: transform .14s ease-out, background-color .16s ease, color .16s ease;
-  }
-  .foot button:active { transform: scale(.97); }
-  .foot button svg { width: 14px; height: 14px; color: var(--muted); }
-
-  /* ═══════════════ map markers ═══════════════ */
   /* Leaflet positions the marker container; animations stay on inner elements. */
   .mhl { width: 15px; height: 15px; cursor: pointer; }
   .mhl .mdot {
@@ -221,11 +42,8 @@
     transition: transform .14s ease-out;
   }
   .mhl:active .mdot { transform: scale(.9); }
-
   .hub { position: relative; width: 46px; height: 46px; cursor: pointer; }
-  .hub .ring, .hub .ring2 {
-    display: none;
-  }
+  .hub .ring, .hub .ring2 { display: none; }
   .hub .core {
     position: absolute; inset: 6px; border-radius: 50%; display: grid; place-items: center; color: #fff;
     background: var(--tower); border: 2.5px solid rgba(255,255,255,.98); box-shadow: 0 2px 5px rgba(0, 0, 0, .24);
@@ -239,11 +57,9 @@
     font: 700 10.5px/15px var(--body); text-align: center;
   }
 
-  /* ═══════════════ popups (Leaflet) ═══════════════ */
   .map-popup {
     position: relative; width: min(300px, 84vw);
-    background: var(--glass-2); backdrop-filter: blur(24px) saturate(1.1); -webkit-backdrop-filter: blur(24px) saturate(1.1);
-    color: var(--text); border: 1px solid rgba(255,255,255,.88); border-radius: 16px;
+    background: var(--glass-2); color: var(--text); border: 1px solid rgba(255,255,255,.88); border-radius: 16px;
     box-shadow: 0 12px 32px rgba(0,0,0,.16), 0 1px 4px rgba(0,0,0,.07); padding: 14px 16px 13px; font-family: var(--body);
   }
   .map-popup::after {
@@ -253,7 +69,7 @@
   }
   .popup-close {
     position: absolute; z-index: 2; color: var(--muted); background: transparent; border: 0;
-    font: 400 20px/22px var(--body); right: 6px; top: 5px; border-radius: 7px; width: 24px; height: 24px;
+    font: 400 20px/22px var(--body); right: 6px; top: 5px; border-radius: 7px; width: 28px; height: 28px;
     cursor: pointer;
   }
   .popup-close:active { transform: scale(.9); background: var(--raise); }
@@ -261,7 +77,7 @@
   .pp-k { font: 650 10px var(--body); letter-spacing: .02em; color: var(--accent-2); margin-bottom: 5px; display: flex; align-items: center; gap: 6px; }
   .pp-k.twr { color: var(--tower); }
   .pp-k::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
-  .pp-t { font-size: 14.5px; font-weight: 700; line-height: 1.3; padding-right: 12px; }
+  .pp-t { font-size: 14.5px; font-weight: 700; line-height: 1.3; padding-right: 16px; }
   .pp-sub { font-size: 12px; color: var(--muted); margin-top: 2px; line-height: 1.45; }
   .pp-rows { margin-top: 9px; border-top: 1px solid var(--line); padding-top: 8px; display: flex; flex-direction: column; gap: 5px; }
   .pp-row { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; font-size: 12px; color: var(--muted); }
@@ -270,9 +86,7 @@
   .pp-apx { margin-top: 7px; font-size: 11px; color: var(--accent-2); }
   .pp-actions { display: flex; gap: 12px; margin-top: 10px; border-top: 1px solid var(--line); padding-top: 9px; }
   .pp-actions a { color: var(--accent); font-size: 12px; font-weight: 600; text-decoration: none; }
-  .pp-actions a:hover { text-decoration: underline; }
 
-  /* hover tip */
   #tip {
     position: fixed; z-index: 60; display: none; pointer-events: none;
     background: rgba(44, 44, 46, .94); color: #fff; border: 0; border-radius: 9px;
@@ -280,64 +94,13 @@
   }
   #tip b { font-family: var(--body); color: #fff; font-variant-numeric: tabular-nums; }
 
-  #mapError {
-    position: absolute; z-index: 80; top: 16px; left: 50%; transform: translateX(-50%); display: none;
-    width: min(520px, calc(100vw - 32px)); padding: 11px 14px; border-radius: 11px;
-    background: #7f1d1d; color: #fff; box-shadow: var(--shadow); font: 600 12.5px/1.45 var(--body);
-  }
-  #mapError.show { display: block; }
-
   @media (hover: hover) and (pointer: fine) {
-    #panelOpen:hover, .navbtn:hover { background: #e9e9ee; color: var(--text); }
-    .chip:hover span { background: #e9e9ee; }
-    .item:hover { background: rgba(118,118,128,.08); border-color: rgba(60,60,67,.07); }
-    .foot button:hover { background: #e6e6eb; color: var(--accent-2); }
-    .foot button:hover svg { color: var(--accent); }
     .mhl:hover .mdot { transform: scale(1.2); }
     .hub:hover .core { transform: scale(1.06); }
     .popup-close:hover { background: var(--raise); color: var(--text); }
     .pp-actions a:hover { text-decoration: underline; }
   }
-
-  @media (prefers-reduced-motion: reduce) {
-    #panel, #panelOpen, .navbtn, .chip span, .tab, .item, .foot button,
-    .mhl .mdot, .hub .core, .sheet-toggle .chev { transition-duration: .01ms !important; }
-    .item { animation: none; }
-  }
-
-  /* ═══════════════ mobile: bottom sheet ═══════════════ */
-  @media (max-width: 720px) {
-    #mapError { top: 82px; }
-    #panel {
-      top: auto; left: 0; right: 0; bottom: 0; width: 100%; max-height: 74dvh;
-      background: rgba(255,255,255,.97); border-radius: 24px 24px 0 0;
-      border: 1px solid rgba(255,255,255,.9); border-bottom: none;
-      box-shadow: 0 -8px 30px rgba(0,0,0,.12);
-      transform: translateY(0); transition: transform .3s var(--ease);
-    }
-    body.sheet-collapsed #panel { transform: translateY(calc(100% - var(--peek))); opacity: 1; pointer-events: auto; }
-    body.panel-hidden #panel { transform: translateY(0); opacity: 1; pointer-events: auto; }
-    .navbtn, #panelOpen { display: none !important; }
-    .sheet-toggle {
-      display: flex; flex: 0 0 auto; flex-direction: column; align-items: center; gap: 8px;
-      height: 64px; width: 100%; padding: 10px 16px 0; background: none; border: none; color: var(--text);
-      font: 500 13px var(--body); cursor: pointer; touch-action: none;
-    }
-    .sheet-toggle:focus { outline: none; }
-    .sheet-toggle:focus-visible { box-shadow: none; }
-    .sheet-toggle:focus-visible .grab { background: var(--accent); }
-    .sheet-toggle .grab { width: 38px; height: 4.5px; border-radius: 999px; background: #c7c7cc; }
-    .sheet-toggle .st-row { display: flex; align-items: center; gap: 6px; color: var(--muted); white-space: nowrap; }
-    .sheet-toggle .st-row b { color: var(--text); font-family: var(--body); font-size: 13.5px; font-variant-numeric: tabular-nums; }
-    .sheet-toggle .chev { color: var(--faint); transition: transform .3s var(--ease); }
-    body.sheet-collapsed .sheet-toggle .chev { transform: rotate(180deg); }
-    .head { padding-top: 0; }
-    .stats { grid-template-columns: repeat(4, 1fr); }
-    .search input { font-size: 16px; }  /* ≥16px — iOS won't zoom the page on focus */
-    .map-popup { width: min(300px, 84vw); }
-  }
 </style>
-<link rel="stylesheet" href="./map-background.css" />
 </head>
 <body>
 
@@ -417,7 +180,11 @@
 <script src="./map-config.js"></script>
 <script src="./vendor/google-mutant/Leaflet.GoogleMutant.js"></script>
 <script src="./map-background.js"></script>
+<script src="./dgis-layer.js"></script>
+<script src="./dgis-view.js"></script>
+<script src="./ui.js"></script>
 <script src="./assignment-data.js"></script>
+<script src="./gateway-data.js"></script>
 
 <script>
 /* ═════════════════ REAL REGISTRY DATA (baked from Excel) ═════════════════ */
@@ -451,6 +218,7 @@ const HUBS = [
 HUBS.forEach((hub, i) => {
   hub.color = ASSIGNMENT_DATA.colors[i];
   hub.capacity = ASSIGNMENT_DATA.gatewayModules[i].length;
+  hub.moduleCount = GATEWAYS.find(gateway => gateway.gatewayId === hub.gatewayId).moduleCount;
 });
 const HUB_RADIUS_M = 9000;
 /* подпись вышки: точное имя из реестра uMap */
@@ -464,11 +232,12 @@ let showMarks = true, showHubs = true, showRadius = false;
 let overlaysReady = false;
 let mahMarkers = [], hubMarkers = [], radiusCircles = [];
 let antennaGeo = null;
+const touch = window.matchMedia("(pointer: coarse)").matches;
 
 const $ = (id) => document.getElementById(id);
 const $tip = $("tip");
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
-const fmt = (n) => n.toLocaleString("ru-RU");
+const fmt = Intl.NumberFormat("ru-RU").format;
 const plural = (n, f) => { const a = Math.abs(n) % 100, b = a % 10; return f[(a > 10 && a < 20) ? 2 : (b > 1 && b < 5) ? 1 : (b === 1) ? 0 : 2]; };
 const cleanM = (m) => m.replace(/^махал+аи\s*/i, "");
 const isMobile = () => window.matchMedia("(max-width: 720px)").matches;
@@ -574,11 +343,12 @@ function addAntennaLayers(){
       return marker;
     });
   }
-  antennaLayer.clearLayers();
+  // Only add or remove the dots whose visibility changed; the canvas repaints once.
   antennaMarkers.forEach((marker) => {
     const p = marker.feature.properties;
-    if ((moduleStatus === 'all' || p.assigned === Number(moduleStatus))
-      && (activeFam == null || p.fi === activeFam)) antennaLayer.addLayer(marker);
+    const show = (moduleStatus === 'all' || p.assigned === Number(moduleStatus))
+      && (activeFam == null || p.fi === activeFam);
+    if (show !== antennaLayer.hasLayer(marker)) show ? antennaLayer.addLayer(marker) : antennaLayer.removeLayer(marker);
   });
 }
 function applyIsolation(){
@@ -665,9 +435,20 @@ function distanceKm(a, b){
 function focusMap(coordinates, minZoom){
   if (!map) return;
   const zoom = Math.max(map.getZoom(), minZoom), pad = fitPad();
-  const center = map.project([coordinates[1], coordinates[0]], zoom)
-    .add([(pad.right - pad.left) / 2, (pad.bottom - pad.top) / 2]);
-  map.setView(map.unproject(center, zoom), zoom, { animate: false });
+  if (map.dgisView?.active) {
+    const size = map.getSize();
+    map.dgisView.focus(L.latLng(coordinates[1], coordinates[0]), zoom,
+      {left:pad.left, top:pad.top, right:size.x-pad.right, bottom:size.y-pad.bottom});
+    return;
+  }
+  const center = map.unproject(map.project([coordinates[1], coordinates[0]], zoom)
+    .add([(pad.right - pad.left) / 2, (pad.bottom - pad.top) / 2]), zoom);
+  if (UI.reduceMotion()) { map.setView(center, zoom, { animate: false }); return; }
+  const size = map.getSize(), z0 = map.getZoom();
+  const dist = map.project(center, z0).distanceTo(map.project(map.getCenter(), z0));
+  // Short hops use Leaflet's compositor zoom/pan; longer ones get a smooth fly-over.
+  if (Math.abs(zoom - z0) <= 3 && dist < Math.max(size.x, size.y)) map.setView(center, zoom, { animate: true, duration: .35 });
+  else map.flyTo(center, zoom, { duration: Math.min(1.1, .55 + dist / 4000) });
 }
 
 function openHub(i, fly){
@@ -683,6 +464,7 @@ function openHub(i, fly){
     + '<div class="pp-sub">' + esc(h.area) + '</div>'
     + '<div class="pp-rows">'
     +   '<div class="pp-row"><span>Gateway ID</span><b>' + esc(h.gatewayId) + '</b></div>'
+    +   '<div class="pp-row"><span>Модулей всего</span><b>' + fmt(h.moduleCount) + '</b></div>'
     +   '<div class="pp-row"><span>Модулей с ID</span><b style="color:' + h.color + '">' + fmt(h.capacity) + '</b></div>'
     +   '<div class="pp-row"><span>Модулей без ID</span><b>' + fmt(h.noId) + '</b></div>'
     +   '<div class="pp-row"><span>Радиус покрытия</span><b class="hot">9 км</b></div>'
@@ -743,7 +525,7 @@ function selectFam(i, toggle){
   } else closePopup();
   applyIsolation(); renderList();
 }
-function resetFam(){ activeFam = null; closePopup(); applyIsolation(); renderList(); fitAll(); }
+function resetFam(){ activeFam = null; closePopup(); applyIsolation(); renderList(); fitAll(true); }
 
 /* ── список в панели ── */
 function renderList(){
@@ -755,9 +537,9 @@ function renderList(){
     $("listNote").textContent = "по числу антенн";
     FAMILIES.forEach((f, i) => {
       if (q && !f.label.toLowerCase().includes(q) && !f.key.includes(q)) return;
-      const el = document.createElement("div");
+      const el = document.createElement("button");
+      el.type = "button";
       el.className = "item" + (activeFam === i ? " active" : "");
-      el.style.animationDelay = Math.min(shown * 22, 380) + "ms";
       el.innerHTML =
         '<div class="swatch" style="background:#8e8e93;color:#8e8e93"></div>'
         + '<div class="body"><div class="name">' + esc(f.label) + (f.approx ? ' <span class="apx" title="примерное расположение">≈</span>' : '') + '</div>'
@@ -770,15 +552,16 @@ function renderList(){
     $("listNote").textContent = "большие антенны · адреса";
     HUBS.forEach((h, i) => {
       if (q && !(h.addr + " " + h.area + " " + hubName(h, i) + " " + h.gatewayId).toLowerCase().includes(q)) return;
-      const el = document.createElement("div");
+      const el = document.createElement("button");
+      el.type = "button";
       el.className = "item";
-      el.style.animationDelay = Math.min(shown * 22, 380) + "ms";
       el.innerHTML =
         '<div class="twr-ico" style="background:' + h.color + ';border-color:' + h.color + ';color:#fff">' + (i + 1) + '</div>'
         + '<div class="body"><div class="name"><span class="code">' + esc(hubName(h, i)) + '</span></div>'
         + '<div class="meta">' + esc(h.gatewayId) + '</div>'
         + '<div class="meta">' + esc(h.addr) + ' · ' + esc(h.area) + '</div></div>'
         + '<div class="cnt gateway-counts">'
+        +   '<span class="metric"><b>' + fmt(h.moduleCount) + '</b><small>всего</small></span>'
         +   '<span class="metric"><b style="color:' + h.color + '">' + fmt(h.capacity) + '</b><small>с ID</small></span>'
         +   '<span class="metric without-id"><b>' + fmt(h.noId) + '</b><small>без ID</small></span>'
         + '</div>';
@@ -790,22 +573,22 @@ function renderList(){
   $("reset").style.display = activeFam != null ? "block" : "none";
 }
 
-function fitAll(){
+function fitAll(animate){
   if (!map) return;
+  map.dgisView?.reset();
   const pad = fitPad();
-  map.fitBounds(bounds0, {
-    paddingTopLeft: [pad.left, pad.top], paddingBottomRight: [pad.right, pad.bottom],
-    maxZoom: 14.5, animate: false,
-  });
+  const options = { paddingTopLeft: [pad.left, pad.top], paddingBottomRight: [pad.right, pad.bottom], maxZoom: 14.5 };
+  if (animate && !UI.reduceMotion()) map.flyToBounds(bounds0, { ...options, duration: .7 });
+  else map.fitBounds(bounds0, { ...options, animate: false });
 }
 const fitPad = () => isMobile()
-  ? { top: $('mapError').classList.contains('show') ? $('mapError').getBoundingClientRect().bottom + 16 : 90, right: 24, bottom: document.body.classList.contains('sheet-collapsed') ? 110 : Math.round($('panel').getBoundingClientRect().height) + 24, left: 24 }
-  : { top: 60, right: 80, bottom: 60, left: document.body.classList.contains('panel-hidden') ? 80 : 420 };
+  ? { top: $('mapError').classList.contains('show') ? $('mapError').offsetTop + $('mapError').offsetHeight + 16 : 90, right: 24, bottom: document.body.classList.contains('sheet-collapsed') ? 110 : $('panel').offsetHeight + 24, left: 24 }
+  : { top: 60, right: 80, bottom: 60, left: document.body.classList.contains('panel-hidden') ? 80 : $('panel').offsetLeft + $('panel').offsetWidth + 40 };
 
 function updateControlPadding(){
   if (!map) return;
   const bottom = isMobile()
-    ? (document.body.classList.contains('sheet-collapsed') ? 78 : Math.round($('panel').getBoundingClientRect().height) + 10)
+    ? (document.body.classList.contains('sheet-collapsed') ? 78 : $('panel').offsetHeight + 10)
     : 14;
   $('map').style.setProperty('--map-control-bottom', bottom + 'px');
 }
@@ -833,7 +616,16 @@ if (isMobile()) document.body.classList.add('sheet-collapsed');
 try {
   map = L.map('map', {
     center: [38.575, 68.75], zoom: 12, minZoom: 8, maxZoom: 20,
-    zoomSnap: .5, preferCanvas: true, zoomControl: false, attributionControl: false,
+    // Whole zoom levels on touch screens keep Google tiles crisp and load a third as many.
+    zoomSnap: touch ? 1 : .5, bounceAtZoomLimits: false,
+    renderer: UI.nearestCanvas({ padding: .1, tolerance: touch ? 8 : 0 }),
+    zoomControl: false, attributionControl: false,
+  });
+  // Registered before the dots so their size is set before Leaflet re-projects and repaints them.
+  map.on('zoomend', () => {
+    if (!antennaMarkers.length) return;
+    const radius = dotRadius();
+    antennaMarkers.forEach((marker) => { marker.options.radius = marker._radius = radius; });
   });
   map.createPane('coverage').style.zIndex = 350;
   L.control.zoom({ position: 'bottomright' }).addTo(map);
@@ -846,16 +638,15 @@ try {
   buildHubMarkers();
   buildRadiusCircles();
   updateControlPadding();
-  map.on('zoomend', () => {
-    const radius = dotRadius();
-    antennaMarkers.forEach((marker) => marker.setRadius(radius));
-  });
-  fitAll();
-  map.on('click', closePopup);
+  fitAll(false);
+  map.on('click', () => { closePopup(); if (isMobile() && !sheet.collapsed()) sheet.set(true); });
   map.on('movestart', () => { $tip.style.display = 'none'; });
-  const resizeMap = () => { map.invalidateSize(); updateControlPadding(); };
+  let resizeFrame = 0;
+  const resizeMap = () => {
+    cancelAnimationFrame(resizeFrame);
+    resizeFrame = requestAnimationFrame(() => { map.invalidateSize({ pan: false }); updateControlPadding(); });
+  };
   new ResizeObserver(resizeMap).observe($('map'));
-  window.addEventListener('resize', resizeMap);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) resizeMap(); });
 } catch (error) {
   console.error(error);
@@ -863,7 +654,11 @@ try {
 }
 
 /* ── UI ── */
-$("search").addEventListener("input", (e) => { query = e.target.value; renderList(); });
+let searchTimer = 0;
+$("search").addEventListener("input", (e) => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => { query = e.target.value; renderList(); }, 60);
+});
 
 $("tgMarks").onchange = (e) => { showMarks = e.target.checked; buildMahMarkers(); };
 $("tgHubs").onchange = (e) => {
@@ -888,12 +683,14 @@ document.querySelectorAll("[data-id-status]").forEach((button) => {
   };
 });
 document.querySelectorAll(".tab").forEach((t) => t.onclick = () => {
+  if (activeTab === t.dataset.t) return;
   activeTab = t.dataset.t;
   document.querySelectorAll(".tab").forEach((x) => x.classList.toggle("on", x === t));
   renderList();
+  if (!UI.reduceMotion()) $("list").animate([{ opacity: .3 }, { opacity: 1 }], { duration: 200, easing: "ease-out" });
 });
 $("reset").onclick = resetFam;
-$("fit").onclick = () => { if (isMobile()) setSheet(true); if (activeFam != null) resetFam(); else fitAll(); };
+$("fit").onclick = () => { if (isMobile()) setSheet(true); if (activeFam != null) resetFam(); else fitAll(true); };
 document.addEventListener("keydown", (e) => { if (e.key === "Escape" && activeFam != null) resetFam(); });
 
 $("exportCsv").onclick = () => {
@@ -927,23 +724,12 @@ $("exportCsv").onclick = () => {
 $("panelHide").onclick = () => { document.body.classList.add("panel-hidden"); updateControlPadding(); };
 $("panelOpen").onclick = () => { document.body.classList.remove("panel-hidden"); updateControlPadding(); };
 
-function setSheet(collapsed){
-  document.body.classList.toggle("sheet-collapsed", collapsed);
-  $("sheetToggle").setAttribute("aria-expanded", String(!collapsed));
-  requestAnimationFrame(updateControlPadding);
-}
-$("sheetToggle").addEventListener("click", () => setSheet(!document.body.classList.contains("sheet-collapsed")));
-(function(){
-  let y0 = null; const t = $("sheetToggle");
-  t.addEventListener("touchstart", (e) => { y0 = e.touches[0].clientY; }, { passive: true });
-  t.addEventListener("touchend", (e) => {
-    if (y0 == null) return;
-    const dy = e.changedTouches[0].clientY - y0; y0 = null;
-    e.preventDefault();
-    if (dy > 24) setSheet(true); else if (dy < -24) setSheet(false);
-    else setSheet(!document.body.classList.contains("sheet-collapsed"));
-  }, { passive: false });
-})();
+const sheet = UI.bottomSheet({
+  panel: $("panel"), toggle: $("sheetToggle"), handles: [$("sheetToggle"), document.querySelector("#panel .head")],
+  enabled: (e) => isMobile() && !e.target.closest("a, input"), onChange: updateControlPadding,
+});
+function setSheet(collapsed){ sheet.set(collapsed); }
+window.matchMedia("(max-width: 720px)").addEventListener("change", () => { if (isMobile()) setSheet(true); else updateControlPadding(); });
 if (isMobile()) setSheet(true);   // телефоны стартуют с картой во весь экран
 
 renderList();

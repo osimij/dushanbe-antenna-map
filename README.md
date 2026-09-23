@@ -29,16 +29,51 @@ python3 -m http.server 8000
 # open http://localhost:8000
 ```
 
-The street-map background uses **Google Maps JavaScript API** when a working key
-is configured in `map-config.js`. It loads through Leaflet.GoogleMutant 0.16.0
-(vendored with its license), so the existing markers, search, and gateway overlays
-keep their coordinates and behavior. Google's original logo and attribution stay
-visible above the map. No Places, routing, or geocoding API is used by the app.
+The street-map background uses **2GIS MapGL JS API**, restoring the vector map
+introduced in commit `e9e92b3`. Both Sino and the legacy citywide view share this
+setup. `dgis-layer.js` keeps the 2GIS camera aligned with the existing Leaflet
+building dots, gateway overlays, search, and mobile controls. The native 2GIS logo
+and copyright remain visible and clickable.
 
-Without a key, or if Google fails to load, the map falls back to OpenStreetMap and
-shows that provider explicitly. Both the Sino and legacy city maps share this
-setup. OpenStreetMap tiles use browser caching and visible attribution under its
+The compass in the bottom-right corner switches between **3D** (45° tilt) and
+**2D**. Its side arrows rotate the map; the red north arrow restores north-up.
+Ctrl + mouse drag also starts rotation. In 3D, phones use 2GIS's two-finger
+rotation and tilt gestures. Both maps support these controls. `dgis-view.js`
+mirrors the visible building dots, gateways, coverage circles, and boundary into
+native 2GIS overlays so they remain geographically aligned when tilted. Search,
+filters, and building details remain connected to the same underlying data.
+“Показать все” returns to the flat overview. The compass is only shown when
+2GIS is available; fallback backgrounds keep their existing flat controls.
+
+Set `provider: '2gis'` and `dgisApiKey` in `map-config.js`. The key must have access
+to [2GIS MapGL JS API](https://docs.2gis.com/en/mapgl/start/first-steps). This uses
+MapGL vector maps, not the separately enabled Raster Tiles API. Browser keys are
+public by design; configure the allowed website domains in the provider account.
+
+If 2GIS cannot load, rejects the key, or loses WebGL support, the map tries Google
+Maps using the existing key, then OpenStreetMap. The provider badge explicitly
+identifies the fallback. To use Google first, set `provider: 'google'`.
+OpenStreetMap retains visible attribution and follows its
 [tile usage policy](https://operations.osmfoundation.org/policies/tiles/).
+
+## Phones and performance
+
+Both maps share `app.css` (panel, bottom sheet, list) and `ui.js` (touch drags,
+the bottom sheet, eased scrolling, and a Leaflet canvas renderer whose taps pick
+the nearest dot).
+
+- On phones the panel is a bottom sheet. Drag or flick its handle, or tap the map,
+  to fold it away. The sheet scrolls as one page, keeping the handle and the export
+  buttons pinned; short windows and landscape phones get the same treatment.
+- Choosing an address folds the list away, glides the map to the building (which
+  stays highlighted), and opens its details as a sheet that can be swiped down.
+  Enter in the search box opens a single result or frames several on the map.
+- Buildings are drawn on one canvas, not as hundreds of DOM markers, so zooming
+  and panning stay smooth on low-end phones. Touch screens snap to whole zoom
+  levels, which keeps Google tiles crisp and loads a third as many of them.
+- The address list renders 50 rows at a time as you scroll, and fast typing is
+  coalesced. The map container exposes `data-visible-buildings` for tests.
+- Motion uses transforms and opacity only, and respects reduced-motion settings.
 
 ## Address matching and limitations
 
@@ -78,10 +113,19 @@ python3 -m unittest discover -s tests -v
 Public address lookups are cached in the ignored `.address-work/` directory.
 The generated `sino-data.js` and the catalog evidence are committed with the site.
 `tests/sino-browser.cjs` checks desktop and mobile search, building details, review
-filters, CSV export, and the previous citywide view using Playwright against the
-running local server. `NODE_PATH` can point at the bundled Playwright installation.
+filters, the paged list, CSV export, and the previous citywide view using Playwright
+against the running local server, for example
+`node tests/sino-browser.cjs http://localhost:8000`. `NODE_PATH` can point at the
+bundled Playwright installation. `node --test tests/map-background.cjs` covers the
+2GIS/Google/OpenStreetMap loading and fallback behavior.
+`node tests/dgis-browser.cjs http://127.0.0.1:8001` checks the live 2GIS provider,
+clickable attribution, building alignment after zooming and panning, and both map
+views on desktop and mobile. It requires an active 2GIS key and WebGL support.
+`node tests/dgis-3d-browser.cjs http://127.0.0.1:8001` checks tilt, rotation,
+building selection, search/filter updates, citywide popups, and recovery to flat
+controls when the provider fails, on both desktop and mobile.
 
-## Connect Google Maps
+## Configure the Google Maps fallback
 
 1. In [Google Cloud Console](https://console.cloud.google.com/), select the map's project.
 2. Enable **Maps JavaScript API** and link an active billing account.
@@ -90,7 +134,8 @@ running local server. `NODE_PATH` can point at the bundled Playwright installati
    `http://localhost:8000/*`, and any other exact deployment domain in use.
 5. Set `googleMapsApiKey` in `map-config.js`. This browser key is visible by design;
    do not put service account credentials or other secrets in this file.
-6. Refresh the app and confirm the provider badge says **Google Maps** and Google's
+6. To check Google directly, temporarily set `provider: 'google'`, refresh, and
+   confirm the provider badge says **Google Maps** and Google's
    logo and map-data attribution are visible. A working fallback alone does not
    mean that the Google key or billing is configured correctly.
 
