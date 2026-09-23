@@ -2,6 +2,9 @@
 *backup*.html
 .DS_Store
 .address-work/
+.final-work/
 scripts/
 tests/
 outputs/
+data/gateway-modules.json
+data/sino-address-catalog.json

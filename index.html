@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
 <meta name="theme-color" content="#eef1f5" />
-<title>Tojikelectrocomplect &amp; Baylan · Ноҳияи Сино</title>
+<title>Tojikelectrocomplect &amp; Baylan · Реестр модулей</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📡</text></svg>" />
 <link rel="preconnect" href="https://maps.googleapis.com" />
 <link rel="preconnect" href="https://maps.gstatic.com" crossorigin />
@@ -16,16 +16,15 @@
 <div id="map"></div>
 <div id="mapError" role="alert"></div>
 <aside id="panel">
-  <button id="sheetToggle" class="sheet-toggle" aria-expanded="true"><span class="grab"></span><span class="st-row"><b id="shAnt">—</b> модулей · Ноҳияи Сино <span class="chev">▾</span></span></button>
+  <button id="sheetToggle" class="sheet-toggle" aria-expanded="true"><span class="grab"></span><span class="st-row"><b id="shAnt">—</b> модулей · Реестр <span class="chev">▾</span></span></button>
   <header class="head">
-    <div class="brand"><div><h1>Tojikelectrocomplect <em>&amp;</em> Baylan</h1><div class="sub">Ноҳияи Сино · март–май 2026</div></div><button id="panelHide" class="navbtn" title="Скрыть панель">‹</button></div>
+    <div class="brand"><div><h1>Tojikelectrocomplect <em>&amp;</em> Baylan</h1><div class="sub">Общий реестр · март–май 2026</div></div><button id="panelHide" class="navbtn" title="Скрыть панель" aria-label="Скрыть панель">‹</button></div>
     <div class="stats">
-      <div class="stat hot"><b id="stAnt">—</b><span>модулей</span></div>
+      <div class="stat hot"><b id="stAnt">—</b><span>уникальных ID</span></div>
       <div class="stat"><b id="stMapped">—</b><span>на карте</span></div>
       <div class="stat"><b id="stPending">—</b><span>уточнить</span></div>
       <div class="stat"><b id="stBuildings">—</b><span>зданий</span></div>
     </div>
-    <a class="city-link" href="./city-map.html">Прежняя карта всего города · оценка ↗</a>
   </header>
   <div class="controls">
     <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.4-3.4"/></svg><input id="search" type="search" placeholder="Улица, дом или Module ID…" aria-label="Поиск адреса или модуля" autocomplete="off" /></div>

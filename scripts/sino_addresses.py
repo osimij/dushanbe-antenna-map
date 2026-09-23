@@ -9,6 +9,7 @@ Only addresses and module IDs are extracted; subscriber details are never export
 import argparse
 import collections
 import concurrent.futures
+import datetime
 import hashlib
 import json
 import pathlib
@@ -33,7 +34,7 @@ STREETS = [
     (r"мухаммадиев", "Мухаммадиева"),
     (r"махсум", "Нусратулло Махсума"),
     (r"испечак", "Испечак"),
-    (r"зараф[шщ]он|зарафшан", "Зарафшон"),
+    (r"зараф[шщ]он?|зарафшан", "Зарафшон"),
     (r"сино", "Абуали ибн Сино"),
     (r"хува[ий]дулло", "Нурулло Хувайдуллоева"),
     (r"маяко[вс]", "Маяковского"),
@@ -60,9 +61,12 @@ STREETS = [
     (r"нодира", "Нодира"),
     (r"навбахор", "Навбахор"),
     (r"ар[гмв][уи][вг]он|армугон", "Аргувон"),
-    (r"хуч[ао]м?би[еи]и|хучанби[еи]и", "Хучамбиёи Поён"),
+    (r"х[оу](?:ч|дж)[ао][мн]?би[еи][еи].*боло", "Худжамбиёи Боло"),
+    (r"х[оу](?:ч|дж)[ао][мн]?би[еи][еи]", "Худжамбиёи Поён"),
     (r"чагатай|шодоб", "Чагатай Шодоб"),
     (r"семенова", "Семёнова"),
+    (r"навобод", "Навобод"),
+    (r"самарканд", "Самарканд"),
 ]
 
 
@@ -70,8 +74,15 @@ def parse_address(address, context=""):
     s = norm(address)
     street = next((label for pattern, label in STREETS if re.search(pattern, s)), "")
     # Apartment numbers must never become house numbers (including 6х-98).
-    building = re.split(r"\s*(?:кв\.?\s*[-–]?|(?<=\d)х\s*-|\bх\s*[-–]|\bх\s+)", s)[0]
-    passage = re.search(r"(?:дом\s*-?\s*)?(\d+)\s*пр\s*-?\s*(\d+)", building)
+    building = re.split(r"\s*(?:кв\.?\s*[-–]?|(?<=\d)х\s*-|\bх\s*[-–]|\bх\s+|\bк\s*(?=\d))", s)[0]
+    # A block number is not a house number. Keep it separately for review.
+    block_match = re.search(r"\bбл(?:ок)?\s*-?\s*([абв]?\s*-?\s*\d+\s*(?:[/\-]?\s*[абв])?)", building)
+    if block_match:
+        building = building[:block_match.start()] + building[block_match.end():]
+    passage = re.search(r"(?:дом\s*-?\s*)?(\d+)\s*пр(?:оезд)?\s*-?\s*(?:дом\s*)?(\d+[а-я]?(?:/\d+)*)", building)
+    if not passage:
+        passage = re.search(r"\bпр(?:оезд)?\s*(\d+)\s*(?:дом\s*)?(\d+[а-я]?(?:/\d+)*)", building)
+    building = re.sub(r"\bдом\s*$", "", building).strip()
     house_match = re.search(r"(?:дом|хонаи|\bд\s*-)\s*[-–]?\s*(\d+[а-яa-z]?(?:\s*/\s*[\dа-яa-z]+)*)", building)
     if house_match:
         house = house_match[1]
@@ -98,16 +109,16 @@ def parse_address(address, context=""):
     if passage:
         key += f"|проезд {passage[1]}"
     # Keep ambiguous block designations separate until explicitly reviewed.
-    block = re.search(r"б\s*-?\s*1(?:\s*-?\s*а)?", building) if street == "Абуали ибн Сино" else None
+    block = block_match or (re.search(r"б\s*-?\s*1(?:\s*-?\s*а)?", building) if street == "Абуали ибн Сино" else None)
     if block:
-        key += "|Б-1"
+        key += "|блок " + re.sub(r"\s+", "", block[0])
     return {"key": key, "street": street, "house": house, "quarter": quarter,
             "block": bool(block), "passage": passage[1] if passage else "", "query": (f"{passage[1]}-й проезд {street} {house}" if passage else f"{street} {house}").strip(),
             "sourceSino": bool(re.search(r"но[хҳ]ияи\s+сино", norm(context)))}
 
 
 def parse_ids(raw):
-    cleaned = re.sub(r"^2026[-\s]*", "", raw.strip())
+    cleaned = re.sub(r"(?<!\d)2026(?:[-\s]+|(?=03\d{6}(?!\d)))", "", raw.strip())
     cleaned = re.sub(r"[ОоOo]", "", cleaned)
     # Separators within a single zero-padded ID, as written in the May register.
     if re.fullmatch(r"\d{2}-\d{2}-\d{2}-\d{2}", cleaned):
@@ -175,7 +186,7 @@ def fetch_query(query):
     if path.exists():
         return json.loads(path.read_text())
     url = "https://2gis.tj/ru/dushanbe/search/" + urllib.parse.quote(query, safe="")
-    result = {"query": query, "url": url, "checked": "2026-09-23", "entities": []}
+    result = {"query": query, "url": url, "checked": datetime.date.today().isoformat(), "entities": []}
     try:
         request = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
         html = urllib.request.urlopen(request, timeout=25).read().decode()
@@ -231,7 +242,7 @@ def inside_polygon(point, ring):
     return inside
 
 
-def match_building(group, entities, ring):
+def match_building(group, entities, ring, citywide=False):
     if not group["house"]:
         return "missing_house", None
     if group["block"]:
@@ -254,8 +265,8 @@ def match_building(group, entities, ring):
                 continue
             if group["street"] == "Зарафшон" and re.search(r"зарафшон\s*-\s*2", catalog_street):
                 continue
-            district_ok = any(d.get("id") == DISTRICT for d in e.get("adm_div", []))
-            if not district_ok or not inside_polygon(e["point"], ring):
+            district_ok = any(d.get("name") == "Душанбе" if citywide else d.get("id") == DISTRICT for d in e.get("adm_div", []))
+            if not district_ok or (not citywide and not inside_polygon(e["point"], ring)):
                 outside = True
                 continue
             matches[e["id"]] = e
@@ -295,8 +306,8 @@ def build():
                                  "url": "https://2gis.tj/ru/dushanbe/geo/" + e["id"]})
         catalog[key] = {"query": g["query"], "checked": result.get("checked"),
                         "status": status, "candidates": [{k: v for k, v in e.items() if k != "geometry"} for e in result["entities"] if e["type"] == "building"]}
-    assignment = json.loads((ROOT / "assignment-data.js").read_text().split(" = ", 1)[1].rstrip(";\n"))
-    gateway = {mid: i for i, ids in enumerate(assignment["gatewayModules"]) for mid in ids}
+    assignment = json.loads((ROOT / "data/gateway-modules.json").read_text())
+    gateway = {mid: i for i, ids in enumerate(assignment) for mid in ids}
     source_files = sorted({r["file"] for r in rows})
     by_id = collections.defaultdict(list)
     for r in rows:

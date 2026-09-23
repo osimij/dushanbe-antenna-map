@@ -6,7 +6,6 @@ const GATEWAYS = [
     "area": "Хуснообод · район Сино",
     "name": "Gateway_FBE3AF",
     "gatewayId": "24E124FFFEFBE3AE",
-    "moduleCount": 1840,
     "color": "#007AFF"
   },
   {
@@ -16,7 +15,6 @@ const GATEWAYS = [
     "area": "102-й микрорайон · район Сино",
     "name": "Gateway_FBE25F",
     "gatewayId": "24E124FFFEFBE25E",
-    "moduleCount": 798,
     "color": "#FF9500"
   },
   {
@@ -26,7 +24,6 @@ const GATEWAYS = [
     "area": "14-й микрорайон · район Сино",
     "name": "Gateway_FBE43D",
     "gatewayId": "24E124FFFEFBE43C",
-    "moduleCount": 900,
     "color": "#34C759"
   },
   {
@@ -36,7 +33,6 @@ const GATEWAYS = [
     "area": "12-й микрорайон · район Сино",
     "name": "Gateway_FBE409",
     "gatewayId": "24E124FFFEFBE408",
-    "moduleCount": 486,
     "color": "#AF52DE"
   },
   {
@@ -46,7 +42,6 @@ const GATEWAYS = [
     "area": "район Сино",
     "name": "Gateway_FBE361",
     "gatewayId": "24E124FFFEFBE360",
-    "moduleCount": 433,
     "color": "#00A6A6"
   },
   {
@@ -56,7 +51,6 @@ const GATEWAYS = [
     "area": "район Исмоили Сомони",
     "name": "Gateway_FBE237",
     "gatewayId": "24E124FFFEFBE236",
-    "moduleCount": 811,
     "color": "#FF3B30"
   },
   {
@@ -66,7 +60,6 @@ const GATEWAYS = [
     "area": "район Исмоили Сомони",
     "name": "Gateway_FBE36F",
     "gatewayId": "24E124FFFEFBE36E",
-    "moduleCount": 245,
     "color": "#5856D6"
   },
   {
@@ -76,7 +69,6 @@ const GATEWAYS = [
     "area": "район Сино",
     "name": "Gateway_FBE239",
     "gatewayId": "24E124FFFEFBE238",
-    "moduleCount": 587,
     "color": "#A2845E"
   }
 ];

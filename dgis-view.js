@@ -1,4 +1,4 @@
-/* Native 2GIS data overlays and camera controls for tilted/rotated views. */
+/* One native 2GIS camera for continuous trackpad, mouse and touch gestures. */
 (function () {
   'use strict';
   const coords = p => [p.lng, p.lat];
@@ -67,6 +67,33 @@
       };
       this.map.getContainer().addEventListener('mousedown', this.ctrlDrag, true);
       this.map.dgisView = this;
+      // Keep fractional zoom throughout a gesture. Leaflet's stepped wheel zoom
+      // and CSS-scaled background used to fight MapGL on Mac trackpads.
+      this.zoomSnap = this.map.options.zoomSnap;
+      this.map.options.zoomSnap = 0;
+      this.zoomClick = e => {
+        const button = e.target.closest('.leaflet-control-zoom-in, .leaflet-control-zoom-out');
+        if (!button || !this.active) return;
+        e.preventDefault(); e.stopImmediatePropagation();
+        this.gl.setZoom(Math.max(this.map.getMinZoom(), Math.min(this.map.getMaxZoom(),
+          this.gl.getZoom() + (button.classList.contains('leaflet-control-zoom-in') ? 1 : -1))), motion());
+      };
+      this.keydown = e => {
+        if (!this.active || e.target !== this.map.getContainer() || e.altKey || e.metaKey || e.ctrlKey) return;
+        const step = e.shiftKey ? 160 : 80;
+        const delta = {ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step]}[e.key];
+        if (delta) {
+          const point = this.gl.project(this.gl.getCenter());
+          this.gl.setCenter(this.gl.unproject([point[0] + delta[0], point[1] + delta[1]]), motion());
+        } else if (['+', '=', '-', '_'].includes(e.key)) {
+          this.gl.setZoom(Math.max(this.map.getMinZoom(), Math.min(this.map.getMaxZoom(),
+            this.gl.getZoom() + (['+', '='].includes(e.key) ? 1 : -1))), motion());
+        } else return;
+        e.preventDefault();
+      };
+      this.map.getContainer().addEventListener('click', this.zoomClick, true);
+      this.map.getContainer().addEventListener('keydown', this.keydown);
+      this.enter();
     }
     updateControl() {
       if (!this.el) return;
@@ -95,7 +122,12 @@
     rotate(delta) { this.enter(); this.gl.setRotation(this.gl.getRotation() + delta, motion()); }
     reset() {
       if (!this.active) return;
-      // Restore the same geographical view before handing gestures back to Leaflet.
+      // 2D retains the native camera: flattening must not reintroduce stepped zoom.
+      this.gl.setPitch(0, motion()); this.gl.setRotation(0, motion());
+      this.updateControl();
+    }
+    leave() {
+      if (!this.active) return;
       this.layer._fromNative = true;
       this.gl.setPitch(0, {animate: false}); this.gl.setRotation(0, {animate: false});
       this.gl.setPadding({top: 0, right: 0, bottom: 0, left: 0}, {animate: false});
@@ -109,6 +141,12 @@
       this.handlers.clear();
       this.layer._sync();
       this.updateControl();
+    }
+    fit(bounds, area, animate) {
+      const size = this.map.getSize();
+      this.gl.setPadding({left: area.left, top: area.top, right: size.x - area.right, bottom: size.y - area.bottom}, {animate: false});
+      this.gl.fitBounds({southWest: [bounds.getWest(), bounds.getSouth()], northEast: [bounds.getEast(), bounds.getNorth()]},
+        {animation: {...motion(), animate: animate && motion().animate}, maxZoom: bounds.getSouthWest().equals(bounds.getNorthEast()) ? 17 : 14.5});
     }
     focus(latlng, zoom, area) {
       const size = this.map.getSize();
@@ -147,10 +185,13 @@
         }
       });
       for (const [id, object] of this.objects) if (!keep.has(id)) { object?.destroy(); this.objects.delete(id); }
-      const data = {type: 'FeatureCollection', features};
+      const data = {type: 'FeatureCollection', features}, signature = JSON.stringify(features);
       if (!this.source) {
         this.source = new mapgl.GeoJsonSource(this.gl, {data, attributes: {purpose: 'module-overlay'}});
-      } else this.source.setData(data).catch(error => console.warn('Could not update 3D markers.', error));
+      } else if (signature !== this.featureSignature) {
+        this.source.setData(data).catch(error => { if (this.active) console.warn('Could not update markers.', error); });
+      }
+      this.featureSignature = signature;
       // Keep icon names literal so MapGL registers each image in its icon atlas.
       // All buildings still share one source; identical dots share one style layer.
       const wanted = new Set();
@@ -216,10 +257,13 @@
       if (this.source) { this.source.destroy(); this.source = null; }
     }
     destroy() {
-      this.reset(); this.clear();
+      this.leave(); this.clear();
+      this.map.options.zoomSnap = this.zoomSnap;
       this.map.off('layeradd layerremove zoomend datachange', this.refresh);
       this.gl.off('moveend', this.moveEnd); this.gl.off('rotation', this.rotateMove); this.gl.off('click', this.click);
       this.map.getContainer().removeEventListener('mousedown', this.ctrlDrag, true);
+      this.map.getContainer().removeEventListener('click', this.zoomClick, true);
+      this.map.getContainer().removeEventListener('keydown', this.keydown);
       this.control.remove(); delete this.map.dgisView;
     }
   };

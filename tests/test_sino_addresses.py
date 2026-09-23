@@ -4,8 +4,11 @@ import importlib.util
 import json
 import pathlib
 import unittest
+import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / 'scripts'))
+import final_dataset
 spec = importlib.util.spec_from_file_location('addresses', ROOT / 'scripts/sino_addresses.py')
 addresses = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(addresses)
@@ -28,12 +31,24 @@ class AddressParsing(unittest.TestCase):
         self.assertEqual(addresses.parse_address('Чагатай-Шодоб -2 дом б/р')['house'], '')
         self.assertEqual(addresses.parse_address('к. Испечак - 2')['house'], '')
 
+    def test_block_and_passage_are_not_house_or_apartment(self):
+        block = addresses.parse_address('Хиёбони Сино 58 бл -2б кв-1')
+        self.assertEqual(block['house'], '58')
+        self.assertTrue(block['block'])
+        for raw in ['кучаи Хувайдуллоев 3 пр дом 4 кв 3', 'кучаи Хувайдуллоев пр 3 дом 4 кв 3']:
+            result = addresses.parse_address(raw)
+            self.assertEqual((result['house'], result['passage']), ('4', '3'))
+        self.assertEqual(addresses.parse_address('к. Сино 130/2 дом х-52')['house'], '130/2')
+        self.assertEqual(addresses.parse_address('Зарафшо М4- д-5 к36')['house'], '5/4')
+
     def test_ids_are_normalized_without_guessing_missing_digits(self):
         self.assertEqual(addresses.parse_ids('2026-03036652'), (['3036652'], ''))
         self.assertEqual(addresses.parse_ids('О304052703040528'), (['3040527', '3040528'], ''))
         self.assertEqual(addresses.parse_ids('03-04-10-01'), (['3041001'], ''))
         self.assertEqual(addresses.parse_ids('03036688/6702'), (['3036688'], '6702'))
         self.assertEqual(addresses.parse_ids('О30365433'), ([], '30365433'))
+        self.assertEqual(addresses.parse_ids('202603043566-2026-03043546'), (['3043566', '3043546'], ''))
+        self.assertEqual(addresses.parse_ids('2026-03036623-2026-03036626'), (['3036623', '3036626'], ''))
 
 
 class Matching(unittest.TestCase):
@@ -68,16 +83,15 @@ class DeliveredData(unittest.TestCase):
         self.assertEqual(summary['idIssues'],len(self.data['idIssues']))
         self.assertTrue(all(m['sources'] for m in modules))
 
-    def test_every_mapped_building_is_in_sino_and_has_evidence(self):
+    def test_every_mapped_building_is_in_dushanbe_and_has_evidence(self):
         catalog=json.loads((ROOT/'data/sino-address-catalog.json').read_text())
         for m in self.data['modules']:
             if m['status']!='matched': continue
             b=self.buildings[m['key']]
             self.assertEqual(b['status'],'matched')
-            self.assertTrue(addresses.inside_polygon({'lon':b['lng'],'lat':b['lat']},self.data['district']['ring']))
             evidence=next(e for e in catalog[m['key']]['candidates'] if e['id']==b['buildingId'])
             self.assertEqual(evidence['point'],{'lat':b['lat'],'lon':b['lng']})
-            self.assertTrue(any(d['id']==addresses.DISTRICT for d in evidence['adm_div']))
+            self.assertTrue(any(d.get('name')=='Душанбе' for d in evidence['adm_div']))
 
     def test_unresolved_groups_have_no_fake_coordinates(self):
         for b in self.buildings.values():
@@ -87,8 +101,7 @@ class DeliveredData(unittest.TestCase):
             if m['status']=='id_conflict':self.assertEqual(m['key'],'')
 
     def test_gateway_relationships_preserve_actual_ids(self):
-        old=json.loads((ROOT/'assignment-data.js').read_text().split(' = ',1)[1].rstrip(';\n'))
-        gateway={mid:i for i,ids in enumerate(old['gatewayModules']) for mid in ids}
+        gateway={mid:i for i,ids in enumerate(json.loads((ROOT/'data/gateway-modules.json').read_text())) for mid in ids}
         for m in self.data['modules']:self.assertEqual(m['gateway'],gateway.get(m['id'],-1))
 
     def test_regression_sino_130_4_is_at_the_catalog_building(self):
@@ -97,18 +110,30 @@ class DeliveredData(unittest.TestCase):
         self.assertEqual(b['buildingId'],'70030077017040685')
 
     def test_source_reconciliation_when_workbooks_are_present(self):
-        prepared=ROOT/'.address-work/records.json'
-        if not prepared.exists():self.skipTest('Source workbooks are local only')
-        raw=json.loads(prepared.read_text());by_id=collections.defaultdict(list)
+        if not final_dataset.SOURCE.exists():self.skipTest('Source workbook is local only')
+        raw=final_dataset.read_records();by_id=collections.defaultdict(list)
         for r in raw:
             for mid in r['ids']:by_id[mid].append(r)
         for m in self.data['modules']:
             self.assertIn(m['id'],by_id)
-            expected={(r['file'],r['sheet'],r['row'],r['address']) for r in by_id[m['id']]}
+            expected={('final-dataset.xlsx',r['sheet'],r['row'],r['address']) for r in by_id[m['id']]}
             actual={(self.data['files'][s['file']],s['sheet'],s['row'],s['address']) for s in m['sources']}
             self.assertEqual(expected,actual)
-        explicit_ids={mid for r in raw if r['sourceSino'] for mid in r['ids']}
-        self.assertTrue(explicit_ids.issubset({m['id'] for m in self.data['modules']}))
+        self.assertEqual(set(by_id),{m['id'] for m in self.data['modules']})
+        self.assertEqual(self.data['files'], ['final-dataset.xlsx'])
+        self.assertEqual(len(raw), 7797)
+        self.assertEqual(self.data['summary']['declaredModules'], 9015)
+        self.assertEqual(self.data['summary']['sourceRecords'], len(raw))
+        self.assertEqual(sum(r['declaredCount'] for r in raw), 9015)
+        expected_issues={r['row'] for r in raw if r['remainder'] or len(r['ids'])!=r['declaredCount'] or not r['ids']}
+        self.assertEqual(expected_issues,{r['row'] for r in self.data['idIssues']})
+        self.assertEqual({r['row'] for r in raw},{s['row'] for m in self.data['modules'] for s in m['sources']} | {r['row'] for r in self.data['idIssues']})
+
+    def test_delivered_records_exclude_subscriber_details(self):
+        for m in self.data['modules']:
+            for source in m['sources']: self.assertEqual(set(source),{'file','sheet','row','address'})
+        allowed={'file','sheet','row','address','rawModule','declaredCount','recognizedCount'}
+        for issue in self.data['idIssues']: self.assertEqual(set(issue),allowed)
 
 
 if __name__=='__main__':unittest.main()

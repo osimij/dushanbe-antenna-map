@@ -20,6 +20,8 @@ const wholeList = page => page.locator('#list').evaluate(async list => {
   const out = await fs.mkdtemp(path.join(os.tmpdir(), 'sino-browser-'));
   try {
     const page = await browser.newPage({viewport:{width:1440,height:1000}, acceptDownloads:true});
+    await page.route('https://mapgl.2gis.com/**', route => route.abort());
+    await page.route('https://maps.googleapis.com/**', route => route.abort());
     const errors=[]; page.on('pageerror',e=>errors.push(e.message));
     await page.goto(process.argv[2] || 'http://localhost:8000', {waitUntil:'domcontentloaded'});
     const expected=await page.evaluate(()=>({summary:SINO_DATA.summary, sample:SINO_DATA.modules.find(m=>m.status==='matched'&&m.key==='Абуали ибн Сино|130/4'), mappedBuildingIds:SINO_DATA.modules.filter(m=>m.status==='matched').map(m=>SINO_DATA.buildings.find(b=>b.key===m.key).buildingId)}));
@@ -30,7 +32,7 @@ const wholeList = page => page.locator('#list').evaluate(async list => {
     await page.getByRole('button',{name:/^Абуали ибн Сино, 130\/4 проспект/}).click();
     assert.equal(await page.locator('#detailsTitle').textContent(),'Абуали ибн Сино, 130/4');
     assert.ok((await page.locator('#detailsContent').textContent()).includes('38.562246, 68.757410'));
-    assert.ok((await page.locator('#detailsContent').textContent()).includes('реестрза марта-2026.xlsx'));
+    assert.ok((await page.locator('#detailsContent').textContent()).includes('final-dataset.xlsx'));
     await page.screenshot({path:path.join(out,'details.png')});
     await page.keyboard.press('Escape');
     await page.locator('#addressDetails').waitFor({state:'hidden'});
@@ -56,10 +58,12 @@ const wholeList = page => page.locator('#list').evaluate(async list => {
     await page.locator('[data-tab="gateways"]').click();
     assert.equal(await page.locator('#list .item').count(),8);
     await page.locator('#list .item').first().click();await page.locator('.tower-popup').waitFor();
-    await page.locator('.city-link').click();await page.waitForLoadState('domcontentloaded');
-    assert.equal(Number((await page.locator('#stAnt').textContent()).replace(/\D/g,'')),8282);
+    await page.goto(new URL('/city-map.html', page.url()).href);await page.waitForURL(url=>!url.pathname.includes('city-map'));
+    assert.equal(Number((await page.locator('#stAnt').textContent()).replace(/\D/g,'')),expected.summary.modules);
     assert.deepEqual(errors,[]);
     const phone=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true,deviceScaleFactor:2});
+    await phone.route('https://mapgl.2gis.com/**', route => route.abort());
+    await phone.route('https://maps.googleapis.com/**', route => route.abort());
     phone.on('pageerror',e=>errors.push(e.message));
     await phone.goto(process.argv[2] || 'http://localhost:8000', {waitUntil:'domcontentloaded'});
     assert.equal(await phone.locator('#sheetToggle').getAttribute('aria-expanded'),'false');

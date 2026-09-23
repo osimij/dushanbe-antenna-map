@@ -40,8 +40,8 @@ const base = process.argv[2] || 'http://127.0.0.1:8001';
       await page.getByRole('button', {name:'Север сверху',exact:true}).click();
       assert.equal(await page.evaluate(() => testMap.dgisView.gl.getRotation()),0);
       await page.getByRole('button', {name:'Вернуться к 2D',exact:true}).click();
-      assert.equal(await page.evaluate(() => testMap.dgisView.active),false);
-      assert.equal(await page.evaluate(() => testMap.dragging.enabled()),true);
+      assert.equal(await page.evaluate(() => testMap.dgisView.active),true);
+      assert.equal(await page.evaluate(() => testMap.dragging.enabled()),false);
       assert.equal(await page.evaluate(() => testMap.dgisView.gl.getPitch()),0);
       if (!mobile) {
         await page.keyboard.down('Control');
@@ -81,7 +81,7 @@ const base = process.argv[2] || 'http://127.0.0.1:8001';
       await page.goto(base+'/city-map.html', {waitUntil:'domcontentloaded'});
       await page.waitForFunction(() => window.testMap?.dgisView);
       await page.getByRole('button', {name:'Включить 3D',exact:true}).click();
-      await page.waitForFunction(() => testMap.dgisView.layers.size===8282);
+      await page.waitForFunction(() => testMap.dgisView.layers.size===SINO_DATA.summary.buildings);
       await page.evaluate(mobile => {
         const v=testMap.dgisView, dot=[...v.layers.values()][0];
         v.focus(dot.getLatLng(),18,{left:mobile?0:420,top:100,right:innerWidth,bottom:mobile?600:innerHeight});
@@ -91,11 +91,11 @@ const base = process.argv[2] || 'http://127.0.0.1:8001';
         const v=testMap.dgisView;return v.project([...v.layers.values()][0].getLatLng());
       });
       await page.mouse.click(...cityPoint);
-      await page.locator('.dgis-native-popup').waitFor();
-      await page.locator('.dgis-native-popup .popup-close').click();
-      await page.locator('.dgis-native-popup').waitFor({state:'hidden'});
+      await page.locator('#addressDetails').waitFor();
+      await page.locator('#closeDetails').click();
+      await page.locator('#addressDetails').waitFor({state:'hidden'});
       // A provider failure in 3D must restore Leaflet interaction and remove the compass.
-      await page.evaluate(() => testMap.dgisView.layer.fire('error',{reason:'webglcontextlost'}));
+      await page.evaluate(() => { testMap.dgisView.layer.fire('error',{reason:'webglcontextlost'}); });
       await page.waitForFunction(() => !testMap.dgisView);
       assert.equal(await page.locator('.dgis-compass').count(),0);
       assert.equal(await page.evaluate(() => testMap.dragging.enabled()),true);

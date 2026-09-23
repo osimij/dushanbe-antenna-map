@@ -8,7 +8,7 @@
       const center = map.getCenter();
       this._gl = new mapgl.Map(this._host, {
         key: this.options.key, center: [center.lng, center.lat], zoom: map.getZoom(),
-        minZoom: 1, maxZoom: 22, lang: 'ru', pitch: 0, rotation: 0,
+        minZoom: map.getMinZoom(), maxZoom: map.getMaxZoom(), lang: 'ru', pitch: 0, rotation: 0,
         zoomControl: false, scaleControl: false, trafficControl: false,
         copyright: 'topRight', controlsLayoutPadding: {top: 75, right: 10},
         disableDragging: true, disableZoomOnScroll: false,
@@ -18,8 +18,13 @@
       this._canvas.style.transformOrigin = '0 0';
       this._gl.once('idle', () => {
         if (!this._map) return;
-        this._view = new window.DgisView(this);
-        this.fire('load');
+        try {
+          this._view = new window.DgisView(this);
+          this.fire('load');
+        } catch (error) {
+          console.warn('Native map controls could not start; using a fallback map.', error);
+          this._failure = setTimeout(() => { if (this._map) this.fire('error', {reason: 'controlsloaderror'}); }, 0);
+        }
       });
       this._gl.on('error', e => {
         if (['invalidtilekey', 'styleloaderror', 'webglcontextlost'].includes(e.type)) {

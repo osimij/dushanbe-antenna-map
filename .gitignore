@@ -12,4 +12,5 @@ node_modules/
 .vercel
 .claude/
 .address-work/
+.final-work/
 __pycache__/

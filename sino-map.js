@@ -1,4 +1,4 @@
-/* Sino's installation register: exact address matches and an explicit review queue. */
+/* Final installation register: exact building matches and an explicit review queue. */
 (() => {
   'use strict';
   const $ = (id) => document.getElementById(id);
@@ -10,7 +10,7 @@
   const touch = matchMedia('(pointer: coarse)').matches;
   const canHover = matchMedia('(hover: hover) and (pointer: fine)').matches;
   const reasons = {
-    missing_house: 'В реестре нет номера дома', block_unverified: 'Нужно уточнить корпус / блок Б-1',
+    missing_house: 'В реестре нет номера дома', block_unverified: 'Нужно уточнить корпус / блок',
     not_found: 'Точный дом не найден в каталоге', outside_sino: 'Найденный адрес находится за границей Сино',
     ambiguous: 'Этому адресу соответствует несколько зданий', id_conflict: 'Один ID указан по разным адресам',
   };
@@ -48,7 +48,7 @@
   $('stPending').textContent = fmt(summary.pending);
   $('stBuildings').textContent = fmt(mappedGroups.length);
   $('nAddresses').textContent = fmt(entries.length);
-  $('sourceNote').textContent = `Точки — найденные здания. При приближении видно число модулей. Ещё ${fmt(summary.idIssues)} строк с неполным или ошибочным ID — в «Уточнить».`;
+  $('sourceNote').textContent = `${fmt(summary.declaredModules)} модулей по реестру · ${fmt(summary.sourceRecords)} записей. ${fmt(summary.modules)} уникальных полных ID; ${fmt(summary.duplicateOccurrences)} повторов. Ещё ${fmt(summary.unrecognizedModules)} из заявленного количества требуют сверки (${fmt(summary.idIssues)} строк). Точки — здания с точным совпадением адреса.`;
 
   const matchQuery = (value) => parts.every(part => value.includes(part));
   function visibleGroups() {
@@ -109,13 +109,13 @@
   function openDetails(group) {
     const b = group.building;
     showDetails(`<h2 id="detailsTitle">${esc(group.title)}</h2>`
-      + `<p>${fmt(group.modules.length)} модулей. ${group.status === 'matched' ? 'Адрес здания найден в 2GIS и находится в районе Сино.' : esc(reasons[group.status]) + '. Точка на карте не ставится до уточнения.'}</p>`
+      + `<p>${fmt(group.modules.length)} модулей. ${group.status === 'matched' ? 'Точный адрес здания найден в 2GIS.' : esc(reasons[group.status]) + '. Точка на карте не ставится до уточнения.'}</p>`
       + (group.status === 'matched' ? `<p class="detail-meta">${esc(b.mapAddress)} · ${b.lat.toFixed(6)}, ${b.lng.toFixed(6)}</p><div class="detail-actions"><a href="${esc(b.url)}" target="_blank" rel="noopener">Здание в 2GIS ↗</a><a href="https://www.google.com/maps/search/?api=1&query=${b.lat},${b.lng}" target="_blank" rel="noopener">Google Maps ↗</a></div>` : '')
       + '<table class="module-table"><thead><tr><th>Module ID</th><th>Адрес в реестре</th><th>Вышка</th></tr></thead><tbody>'
       + group.modules.map(m => `<tr><td>${esc(m.id)}</td><td>${m.sources.map(s => `${esc(s.address)}<small>${esc(sourceText(s))}</small>`).join('<br>')}</td><td>${gatewayText(m)}</td></tr>`).join('') + '</tbody></table>');
   }
   function openIssue(issue) {
-    showDetails(`<h2 id="detailsTitle">Нужно уточнить Module ID</h2><p>${esc(issue.address)}</p><p class="issue-id">Запись в источнике: <b>${esc(issue.rawModule)}</b></p><p class="detail-meta">${esc(sourceText(issue))}</p><p>Неполный или ошибочный ID сохранён как в источнике. Полные ID из этой строки учтены отдельно; недостающие цифры не добавлялись.</p>`);
+    showDetails(`<h2 id="detailsTitle">Нужно уточнить Module ID</h2><p>${esc(issue.address)}</p><p class="issue-id">Запись в источнике: <b>${esc(issue.rawModule)}</b></p><p class="detail-meta">${esc(sourceText(issue))}</p><p>По реестру: ${fmt(issue.declaredCount)}. Распознано полных ID: ${fmt(issue.recognizedCount)}. Полные ID учтены отдельно; недостающие цифры не добавлялись.</p>`);
   }
 
   /* ─────────────── camera: glide to places, keep them clear of the panel and sheets ─────────────── */
@@ -154,6 +154,11 @@
   }
   function fitTo(latlngs, animate) {
     if (!map || !latlngs.length) return;
+    if (map.dgisView?.active) {
+      const area = visibleArea();
+      map.dgisView.fit(L.latLngBounds(latlngs), {left: area.left + 24, right: area.right - 24, top: area.top + 30, bottom: area.bottom - 24}, animate);
+      return;
+    }
     map.dgisView?.reset();
     const bounds = L.latLngBounds(latlngs), options = {...fitPadding(), maxZoom: latlngs.length === 1 ? 17 : 14.5};
     if (animate && !UI.reduceMotion()) map.flyToBounds(bounds, {...options, duration: .7});
@@ -197,7 +202,7 @@
     renderer = UI.nearestCanvas({padding: touch ? .3 : .15, tolerance: touch ? 9 : 1});
     map = L.map('map', {
       center: [38.57, 68.74], zoom: 13, minZoom: 8, maxZoom: 20,
-      // Whole zoom levels on touch screens keep Google tiles crisp and load a third as many.
+      // Raster fallbacks snap; DgisView enables continuous native vector zoom.
       zoomSnap: touch ? 1 : .5, bounceAtZoomLimits: false,
       renderer, zoomControl: false, attributionControl: false,
     });
@@ -302,7 +307,7 @@
     if (!fromMap && mobile()) sheet.set(true);
     const peek = mobile() ? sheet.peek() : 0;
     L.popup({autoPan: fromMap, autoPanPaddingTopLeft: [20, 20], autoPanPaddingBottomRight: [20, peek + 20], offset: [0, -14]})
-      .setLatLng(latlng).setContent(`<div class="tower-popup"><b>${esc(h.name)}</b><p>${esc(h.addr)}</p><p>${esc(h.gatewayId)}</p><p><b>${fmt(h.moduleCount)}</b> модулей всего</p><p>${fmt(gatewayCounts[i])} в реестре Сино</p></div>`).openOn(map);
+      .setLatLng(latlng).setContent(`<div class="tower-popup"><b>${esc(h.name)}</b><p>${esc(h.addr)}</p><p>${esc(h.gatewayId)}</p><p><b>${fmt(gatewayCounts[i])}</b> модулей в новом реестре</p><p>Связи с вышками — по исходному списку ID.</p></div>`).openOn(map);
     if (!fromMap) focusOn(latlng, Math.max(15, Math.min(map.getZoom(), 17)));
   }
   function showError(message) { $('mapError').textContent = message; $('mapError').classList.add('show'); }
@@ -332,7 +337,7 @@
   function rowHtml(row, i) {
     if (row.tower != null) {
       const h = GATEWAYS[row.tower];
-      return `<button type="button" class="item" data-i="${i}"><div class="swatch" style="background:${h.color}"></div><div class="body"><div class="name">${esc(h.name)}</div><div class="meta">${esc(h.gatewayId)}<br>${esc(h.addr)}</div></div><div class="cnt">${fmt(h.moduleCount)}<small>модулей всего</small><small>${fmt(gatewayCounts[row.tower])} в реестре Сино</small></div></button>`;
+      return `<button type="button" class="item" data-i="${i}"><div class="swatch" style="background:${h.color}"></div><div class="body"><div class="name">${esc(h.name)}</div><div class="meta">${esc(h.gatewayId)}<br>${esc(h.addr)}</div></div><div class="cnt">${fmt(gatewayCounts[row.tower])}<small>модулей в реестре</small></div></button>`;
     }
     if (row.issue) {
       return `<button type="button" class="item" data-i="${i}"><div class="body"><div class="name">${esc(row.issue.address)}</div><div class="meta pending-label">Уточнить ID: ${esc(row.issue.rawModule)}</div></div></button>`;
@@ -353,7 +358,7 @@
   function renderList(animate) {
     if (tab === 'gateways') {
       rows = GATEWAYS.map((h, i) => ({tower: i})).filter(r => matchQuery(towerSearch[r.tower]));
-      $('listNote').textContent = `Всего ${fmt(GATEWAYS.reduce((sum, h) => sum + h.moduleCount, 0))} модулей · данные по вышкам`;
+      $('listNote').textContent = `${fmt(gatewayCounts.reduce((sum, count) => sum + count, 0))} модулей связаны с вышками по ID`;
     } else {
       const shown = visibleGroups();
       rows = shown.map(group => ({group}));
@@ -454,9 +459,10 @@
       for (const s of m.sources) out.push([m.id,m.status,s.address,b?.mapAddress||'',b?.lat??'',b?.lng??'',b?.url||'',GATEWAYS[m.gateway]?.gatewayId||'',SINO_DATA.files[s.file],s.sheet,s.row,'']);
     }
     for (const issue of SINO_DATA.idIssues) out.push(['','invalid_or_shortened_id',issue.address,'','','','','',SINO_DATA.files[issue.file],issue.sheet,issue.row,issue.rawModule]);
-    const csv = out.map(row=>row.map(value=>'"'+String(value).replace(/"/g,'""')+'"').join(',')).join('\r\n');
+    // Neutralize spreadsheet formulas in source text when an administrator opens CSV.
+    const csv = out.map(row=>row.map(value=>'"'+String(value).replace(/^[=+@\-\t\r]/, "'$&").replace(/"/g,'""')+'"').join(',')).join('\r\n');
     const url=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'}));
-    const link=document.createElement('a');link.href=url;link.download='sino-module-addresses.csv';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+    const link=document.createElement('a');link.href=url;link.download='final-module-addresses.csv';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
   };
 
   try { setupMap(); }
